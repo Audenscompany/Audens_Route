@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f1115" />
+<link rel="manifest" href="manifest.json" />
+<title>Audens Route — Motoboy</title>
+<style>
+  :root{
+    --bg:#0f1115; --surface:#171a21; --surface-2:#1e222b; --border:#2a2f3a;
+    --text:#e7ebf0; --text-dim:#9aa4b2; --text-faint:#6b7484;
+    --accent:#4f8cff; --purple:#9b7dff; --green:#34c77b; --amber:#f5a524; --red:#f2545b;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{max-width:100%; overflow-x:hidden;}
+  body{margin:0; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;}
+  .app{width:100%; max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
+
+  header{
+    position:sticky; top:0; z-index:10; padding:14px 16px;
+    background:rgba(15,17,21,.94); backdrop-filter:blur(8px); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--purple));
+    display:grid;place-items:center;font-weight:800;color:#fff;}
+  header .who{flex:1;}
+  header .who b{font-size:14px;}
+  header .who span{display:block; font-size:12px; color:var(--text-dim);}
+  .toggle{
+    display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:700;
+  }
+  .toggle .sw{width:34px;height:20px;border-radius:999px;background:#3a3f4b;position:relative;transition:background .2s;}
+  .toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;}
+  .toggle.on .sw{background:var(--green);}
+  .toggle.on .sw::after{left:16px;}
+
+  .content{flex:1; padding:16px; display:flex; flex-direction:column; gap:14px;}
+
+  .status-card{
+    background:linear-gradient(135deg,var(--surface),var(--surface-2));
+    border:1px solid var(--border); border-radius:14px; padding:16px;
+  }
+  .status-card .lbl{font-size:12px; color:var(--text-dim);}
+  .status-card .val{font-size:20px; font-weight:750; margin-top:3px; display:flex; align-items:center; gap:9px;}
+  .status-card .val .d{width:11px;height:11px;border-radius:50%;background:var(--text-faint);}
+  .status-card.online .val .d{background:var(--green);}
+  .status-card .meta{display:flex; gap:18px; margin-top:12px;}
+  .status-card .meta div{font-size:12px; color:var(--text-dim);}
+  .status-card .meta b{display:block; color:var(--text); font-size:16px; font-weight:700;}
+
+  .section-title{font-size:12.5px; color:var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin:4px 2px 0;}
+
+  .route{background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .route-head{padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;}
+  .route-head b{font-size:15px;}
+  .route-head .chip{margin-left:auto; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:rgba(155,125,255,.16); color:var(--purple);}
+  .stops{padding:6px 0;}
+  .stop{display:flex; gap:12px; padding:12px 16px; align-items:flex-start;}
+  .stop:not(:last-child){border-bottom:1px solid var(--border);}
+  .stop .seq{width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);
+    display:grid;place-items:center;font-size:13px;font-weight:750;flex-shrink:0;}
+  .stop.done .seq{background:var(--green);border-color:var(--green);color:#0f1115;}
+  .stop .info{flex:1;}
+  .stop .info b{font-size:14px;}
+  .stop .info .addr{font-size:12.5px; color:var(--text-dim); margin-top:2px;}
+  .stop .info .eta{font-size:11.5px; color:var(--text-faint); margin-top:3px;}
+  .stop .mini{border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); border-radius:8px;
+    padding:6px 8px; font-size:11.5px; cursor:pointer; text-decoration:none; white-space:nowrap;}
+
+  .actions{display:flex; flex-direction:column; gap:10px; margin-top:2px;}
+  .big{
+    width:100%; border:none; border-radius:12px; padding:15px; font-size:15px; font-weight:750; cursor:pointer;
+    color:#fff; background:var(--accent); transition:filter .15s;
+  }
+  .big:hover{filter:brightness(1.08);}
+  .big.green{background:var(--green); color:#0f1115;}
+  .big.amber{background:var(--amber); color:#0f1115;}
+  .big.ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--border);}
+  .big:disabled{opacity:.4; cursor:default;}
+  .idle{color:var(--text-faint); text-align:center; padding:30px 10px; font-size:13.5px;}
+
+  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    padding:11px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:60;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">A</div>
+    <div class="who">
+      <b id="driverName">João</b>
+      <span id="driverSub">Motoboy · Audens Route</span>
+    </div>
+    <div class="toggle on" id="onlineToggle" onclick="toggleOnline()">
+      <span id="onlineLabel">Online</span><span class="sw"></span>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="status-card online" id="statusCard">
+      <div class="lbl">Status atual</div>
+      <div class="val"><span class="d"></span><span id="statusVal">Na loja · aguardando rota</span></div>
+      <div class="meta">
+        <div>Posição na fila<b id="queuePos">1º</b></div>
+        <div>Entregas hoje<b id="todayCount">4</b></div>
+        <div>Tempo online<b id="onlineTime">1h20</b></div>
+      </div>
+    </div>
+
+    <div class="section-title">Rota atribuída</div>
+    <div id="routeWrap"></div>
+
+    <div class="actions" id="actions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script>
+  const CFG = window.AUDENS_CONFIG || {};
+
+  // ----- estado (demo) -----
+  let driver = { name:'João', status:'at_store', online:true, queuePos:'1º', today:4 };
+
+  // rota de exemplo (2 pedidos) — na Fase 3 isto vem do backend/Firebase
+  let route = {
+    id:'route_demo_001',
+    status:'suggested', // suggested -> accepted -> in_progress -> finished
+    distanceKm:4.8, etaMin:22,
+    stops:[
+      { orderId:'1035', label:'Pedido #1035', addr:'Rua Exemplo, 123 — Centro', eta:8, done:false,
+        maps:'https://www.google.com/maps/search/?api=1&query=-19.77,-43.85' },
+      { orderId:'1036', label:'Pedido #1036', addr:'Av. Central, 900 — Centro', eta:15, done:false,
+        maps:'https://www.google.com/maps/search/?api=1&query=-19.772,-43.852' },
+    ],
+  };
+
+  const STATUS_LABEL = {
+    at_store:'Na loja · aguardando rota', route_suggested:'Rota sugerida',
+    route_accepted:'Rota aceita', delivering:'Em entrega', returning:'Retornando à loja', online:'Online',
+  };
+
+  function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+    clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
+
+  function toggleOnline(){
+    driver.online = !driver.online;
+    const el = document.getElementById('onlineToggle');
+    el.classList.toggle('on', driver.online);
+    document.getElementById('onlineLabel').textContent = driver.online ? 'Online' : 'Offline';
+    if(!driver.online){ driver.status='online'; }
+    render();
+  }
+
+  function renderRoute(){
+    const wrap = document.getElementById('routeWrap');
+    if(!route || route.status==='finished'){
+      wrap.innerHTML = `<div class="route"><div class="idle">Nenhuma rota atribuída.<br/>Aguardando o operador enviar a próxima.</div></div>`;
+      return;
+    }
+    const chip = ({suggested:'Sugerida',accepted:'Aceita',in_progress:'Em andamento'})[route.status] || route.status;
+    wrap.innerHTML = `
+      <div class="route">
+        <div class="route-head">
+          <b>Rota • ${route.stops.length} pedidos</b>
+          <span class="chip">${chip}</span>
+        </div>
+        <div class="stops">
+          ${route.stops.map((s,i)=>`
+            <div class="stop ${s.done?'done':''}">
+              <div class="seq">${s.done?'✓':i+1}</div>
+              <div class="info">
+                <b>${s.label}</b>
+                <div class="addr">${s.addr}</div>
+                <div class="eta">chegada estimada: ${s.eta} min</div>
+              </div>
+              <a class="mini" href="${s.maps}" target="_blank" rel="noopener">Maps</a>
+            </div>`).join('')}
+        </div>
+        <div class="route-head" style="border-top:1px solid var(--border);border-bottom:none;">
+          <span style="font-size:12.5px;color:var(--text-dim)">Distância ${route.distanceKm} km · ~${route.etaMin} min</span>
+        </div>
+      </div>`;
+  }
+
+  function renderActions(){
+    const box = document.getElementById('actions');
+    if(!driver.online){ box.innerHTML=''; return; }
+    let html = '';
+    if(route.status==='suggested'){
+      html = `<button class="big" onclick="acceptRoute()">Aceitar rota</button>`;
+    } else if(route.status==='accepted'){
+      html = `<button class="big amber" onclick="startRoute()">Sair para entrega</button>`;
+    } else if(route.status==='in_progress'){
+      const next = route.stops.find(s=>!s.done);
+      if(next){
+        html = `<button class="big green" onclick="completeStop('${next.orderId}')">Marquei entregue: #${next.orderId}</button>`;
+      } else {
+        html = `<button class="big" onclick="finishRoute()">Finalizar rota</button>`;
+      }
+    }
+    box.innerHTML = html;
+  }
+
+  function render(){
+    document.getElementById('driverName').textContent = driver.name;
+    document.getElementById('statusVal').textContent = STATUS_LABEL[driver.status] || driver.status;
+    document.getElementById('statusCard').classList.toggle('online', driver.online);
+    document.getElementById('queuePos').textContent = driver.queuePos;
+    document.getElementById('todayCount').textContent = driver.today;
+    renderRoute(); renderActions();
+  }
+
+  // ----- ações (demo; na Fase 3 chamam a API/Firebase) -----
+  function acceptRoute(){ route.status='accepted'; driver.status='route_accepted'; toast('Rota aceita'); render(); }
+  function startRoute(){ route.status='in_progress'; driver.status='delivering'; toast('Boa entrega!'); render(); }
+  function completeStop(id){
+    const s = route.stops.find(x=>x.orderId===id); if(s){ s.done=true; driver.today++; toast('Pedido #'+id+' entregue'); }
+    render();
+  }
+  function finishRoute(){
+    route.status='finished'; driver.status='returning'; toast('Rota finalizada — voltando à loja');
+    render();
+  }
+
+  render();
+
+  // registra o service worker (só funciona quando servido via http/https)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>

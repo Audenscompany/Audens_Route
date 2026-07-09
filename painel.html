@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Audens Route — Painel Operacional</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e7ebf0;
+    --text-dim: #9aa4b2;
+    --text-faint: #6b7484;
+    --accent: #4f8cff;
+    --green: #34c77b;
+    --amber: #f5a524;
+    --red: #f2545b;
+    --purple: #9b7dff;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.25);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- top bar ---------- */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 20px; background: rgba(15,17,21,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 16px;
+  }
+  .brand h1 { font-size: 15px; margin: 0; line-height: 1.1; }
+  .brand span { font-size: 12px; color: var(--text-dim); }
+  .spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); }
+  .pill.live .dot { background: var(--green); box-shadow: 0 0 0 0 rgba(52,199,123,.6); animation: pulse 2s infinite; }
+  .pill.demo .dot { background: var(--amber); }
+  .pill.error .dot { background: var(--red); }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(52,199,123,.5)} 70%{box-shadow:0 0 0 7px rgba(52,199,123,0)} 100%{box-shadow:0 0 0 0 rgba(52,199,123,0)} }
+  .btn {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    padding: 8px 12px; border-radius: 9px; font-size: 13px; cursor: pointer; font-weight: 600;
+    transition: background .15s, border-color .15s;
+  }
+  .btn:hover { background: #262b36; }
+  .btn.icon { padding: 8px 10px; }
+
+  /* ---------- KPI row ---------- */
+  .kpis {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+    padding: 18px 20px 4px;
+  }
+  @media (max-width: 900px){ .kpis { grid-template-columns: repeat(3,1fr);} }
+  @media (max-width: 520px){ .kpis { grid-template-columns: repeat(2,1fr);} }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .kpi .n { font-size: 26px; font-weight: 750; letter-spacing: -.5px; }
+  .kpi .l { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .kpi .n.accent { color: var(--accent); }
+  .kpi .n.green { color: var(--green); }
+  .kpi .n.amber { color: var(--amber); }
+  .kpi .n.purple { color: var(--purple); }
+
+  /* ---------- board ---------- */
+  .board {
+    display: grid; grid-template-columns: repeat(6, minmax(220px, 1fr)); gap: 14px;
+    padding: 16px 20px 40px; overflow-x: auto; align-items: start;
+  }
+  .col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-height: 120px; }
+  .col-head {
+    display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+    border-bottom: 1px solid var(--border); position: sticky; top: 0;
+  }
+  .col-head .name { font-size: 13px; font-weight: 700; }
+  .col-head .count {
+    margin-left: auto; font-size: 12px; font-weight: 700; color: var(--text-dim);
+    background: var(--surface-2); border-radius: 999px; padding: 2px 9px; min-width: 24px; text-align: center;
+  }
+  .col-bar { height: 3px; border-radius: 3px 3px 0 0; }
+  .col-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; max-height: 68vh; overflow-y: auto; }
+  .empty { color: var(--text-faint); font-size: 12.5px; text-align: center; padding: 18px 8px; }
+
+  /* ---------- card ---------- */
+  .card {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px 12px; box-shadow: var(--shadow); animation: rise .25s ease;
+  }
+  @keyframes rise { from{opacity:0; transform: translateY(6px)} to{opacity:1; transform:none} }
+  .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .store { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+  .store .sdot { width: 9px; height: 9px; border-radius: 50%; }
+  .oid { margin-left: auto; font-weight: 750; font-size: 13.5px; }
+  .row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-dim); margin: 3px 0; }
+  .row .k { color: var(--text-faint); }
+  .card-foot { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .total { font-weight: 700; font-size: 13px; color: var(--text); }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .3px; }
+  .badge.normal { background: rgba(154,164,178,.15); color: var(--text-dim); }
+  .badge.attention { background: rgba(245,165,36,.16); color: var(--amber); }
+  .badge.high { background: rgba(242,84,91,.16); color: var(--red); }
+  .time { font-size: 11.5px; color: var(--text-faint); }
+  .act {
+    margin-left: auto; border: none; cursor: pointer; font-weight: 700; font-size: 12px;
+    padding: 6px 11px; border-radius: 8px; color: #fff; background: var(--accent);
+  }
+  .act.green { background: var(--green); }
+  .act:disabled { opacity: .4; cursor: default; }
+
+  /* ---------- modal ---------- */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none;
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    width: 100%; max-width: 460px; padding: 22px; box-shadow: var(--shadow);
+  }
+  .modal h2 { margin: 0 0 4px; font-size: 17px; }
+  .modal p.sub { margin: 0 0 16px; font-size: 13px; color: var(--text-dim); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; color: var(--text-dim); }
+  .field input, .field textarea, .field select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 9px; padding: 9px 11px; font-size: 13px; font-family: inherit;
+  }
+  .field textarea { min-height: 92px; resize: vertical; font-family: ui-monospace, monospace; font-size: 12px; }
+  .seg { display: flex; gap: 6px; }
+  .seg button {
+    flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text-dim); font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-actions .btn { flex: 1; text-align: center; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .hint { font-size: 11.5px; color: var(--text-faint); margin-top: 6px; line-height: 1.5; }
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 11px 18px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">A</div>
+    <div>
+      <h1>Audens Route</h1>
+      <span>Painel Operacional</span>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div id="statusPill" class="pill demo"><span class="dot"></span><span id="statusText">Demonstração</span></div>
+  <button class="btn icon" id="refreshBtn" title="Atualizar agora">↻</button>
+  <button class="btn icon" id="settingsBtn" title="Configurações">⚙</button>
+</header>
+
+<section class="kpis" id="kpis"></section>
+
+<main class="board" id="board"></main>
+
+<!-- settings modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2>Configurações do painel</h2>
+    <p class="sub">Escolha de onde o painel lê os pedidos.</p>
+
+    <div class="field">
+      <label>Fonte de dados</label>
+      <div class="seg" id="sourceSeg">
+        <button data-src="demo" class="on">Demonstração</button>
+        <button data-src="api">Backend (API)</button>
+        <button data-src="firebase">Firebase</button>
+      </div>
+    </div>
+
+    <div class="field" id="apiField">
+      <label>URL do backend (Cloud Run ou local)</label>
+      <input id="apiUrl" type="text" placeholder="http://localhost:8080" value="http://localhost:8080" />
+      <div class="hint">O painel chama <code>GET /api/orders</code> a cada poucos segundos e usa <code>PATCH /api/orders/:id/status</code> nos botões.</div>
+    </div>
+
+    <div class="field" id="fbField" style="display:none">
+      <label>Config do Firebase (cole o objeto firebaseConfig)</label>
+      <textarea id="fbConfig" placeholder='{
+  "apiKey": "...",
+  "projectId": "...",
+  "appId": "..."
+}'></textarea>
+      <div class="hint">Lê a coleção <code>orders</code> em tempo real (onSnapshot). O SDK é carregado só quando você usa este modo.</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="cancelBtn">Cancelar</button>
+      <button class="btn primary" id="saveBtn">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Audens Route — Painel de pedidos (HTML + Firebase)
+   Modos: demo (padrão) | api (backend NestJS) | firebase (realtime)
+   ============================================================ */
+
+// ----- definição das colunas do quadro (Tela 2 da arquitetura) -----
+const COLUMNS = [
+  { id: 'recebido',   name: 'Recebido',              color: '#4f8cff', statuses: ['received','confirmed'] },
+  { id: 'preparo',    name: 'Em preparo',            color: '#f5a524', statuses: ['preparing'] },
+  { id: 'pronto',     name: 'Pronto',                color: '#34c77b', statuses: ['ready'] },
+  { id: 'agrupando',  name: 'Aguardando agrupamento',color: '#9b7dff', statuses: ['waiting_grouping','grouped'] },
+  { id: 'rota',       name: 'Em rota',               color: '#4fd0e0', statuses: ['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer'] },
+  { id: 'entregue',   name: 'Entregue',              color: '#7a869a', statuses: ['delivered'] },
+];
+
+const STATUS_LABEL = {
+  received:'Recebido', confirmed:'Confirmado', preparing:'Em preparo', ready:'Pronto',
+  waiting_grouping:'Aguardando agrupamento', grouped:'Agrupado', waiting_driver:'Aguardando motoboy',
+  sent_to_driver:'Enviado ao motoboy', accepted_by_driver:'Aceito', out_for_delivery:'Saiu p/ entrega',
+  arrived_at_customer:'Chegou no cliente', delivered:'Entregue', canceled:'Cancelado', order_error:'Erro'
+};
+
+// próxima ação manual válida (fluxo cozinha na Fase 1)
+const NEXT_ACTION = {
+  received:  { to: 'preparing', label: 'Iniciar preparo', cls: '' },
+  confirmed: { to: 'preparing', label: 'Iniciar preparo', cls: '' },
+  preparing: { to: 'ready',     label: 'Marcar pronto',   cls: 'green' },
+};
+
+const STORE_COLORS = { hamburgueria: '#f5a524', pizzaria: '#f2545b' };
+function storeColor(name){
+  const n = (name||'').toLowerCase();
+  if (n.includes('burg')) return STORE_COLORS.hamburgueria;
+  if (n.includes('pizz')) return STORE_COLORS.pizzaria;
+  return '#7a869a';
+}
+
+// ----- estado -----
+let state = {
+  source: 'demo',
+  apiUrl: 'http://localhost:8080',
+  fbConfig: '',
+  orders: [],
+  pollTimer: null,
+  fbUnsub: null,
+};
+
+// ============================================================
+//  DADOS DEMO
+// ============================================================
+function minutesAgoISO(m){ return new Date(Date.now() - m*60000).toISOString(); }
+function demoOrders(){
+  const mk = (id, store, storeName, status, bairro, total, risk, sinceMin) => ({
+    id: 'demo_'+id, externalOrderId: String(id), storeName, storeType: store, status,
+    address: { neighborhood: bairro }, total, riskLevel: risk,
+    createdAt: minutesAgoISO(sinceMin+8),
+    _statusSince: minutesAgoISO(sinceMin),
+  });
+  return [
+    mk(1042,'hamburgueria','Burger FC','received','Centro',52.8,'normal',2),
+    mk(1043,'pizzaria','Pizza FC','received','São Benedito',89.9,'normal',5),
+    mk(1039,'hamburgueria','Burger FC','preparing','Centro',41.0,'normal',9),
+    mk(1040,'pizzaria','Pizza FC','preparing','Palmital',74.5,'attention',14),
+    mk(1035,'hamburgueria','Burger FC','ready','Centro',33.9,'normal',3),
+    mk(1036,'hamburgueria','Burger FC','ready','Centro',58.0,'normal',6),
+    mk(1031,'pizzaria','Pizza FC','waiting_grouping','São Benedito',66.0,'attention',11),
+    mk(1028,'hamburgueria','Burger FC','out_for_delivery','Bela Vista',47.5,'normal',18),
+    mk(1029,'pizzaria','Pizza FC','out_for_delivery','Bela Vista',92.0,'high',24),
+    mk(1021,'hamburgueria','Burger FC','delivered','Centro',38.0,'normal',40),
+    mk(1022,'pizzaria','Pizza FC','delivered','Palmital',80.0,'normal',52),
+  ];
+}
+
+// ============================================================
+//  RENDER
+// ============================================================
+function colOfStatus(status){
+  return COLUMNS.find(c => c.statuses.includes(status));
+}
+function fmtMoney(v){ return 'R$ ' + (Number(v)||0).toFixed(2).replace('.', ','); }
+function relTime(iso){
+  if(!iso) return '';
+  const diff = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime())/60000));
+  if (diff < 1) return 'agora';
+  if (diff < 60) return diff + ' min';
+  const h = Math.floor(diff/60); return h + 'h' + String(diff%60).padStart(2,'0');
+}
+
+function render(){
+  // KPIs
+  const count = (sts) => state.orders.filter(o => sts.includes(o.status)).length;
+  const kpis = [
+    { n: state.orders.length, l: 'Pedidos ativos', c: 'accent' },
+    { n: count(['received','confirmed']), l: 'Recebidos', c: '' },
+    { n: count(['preparing']), l: 'Em preparo', c: 'amber' },
+    { n: count(['ready','waiting_grouping','grouped']), l: 'Prontos', c: 'green' },
+    { n: count(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']), l: 'Em rota', c: 'purple' },
+    { n: count(['delivered']), l: 'Entregues', c: '' },
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(k =>
+    `<div class="kpi"><div class="n ${k.c}">${k.n}</div><div class="l">${k.l}</div></div>`
+  ).join('');
+
+  // board
+  const board = document.getElementById('board');
+  board.innerHTML = COLUMNS.map(col => {
+    const items = state.orders.filter(o => (colOfStatus(o.status)||{}).id === col.id);
+    const cards = items.length ? items.map(cardHTML).join('') :
+      `<div class="empty">sem pedidos</div>`;
+    return `
+      <div class="col">
+        <div class="col-bar" style="background:${col.color}"></div>
+        <div class="col-head">
+          <span class="name">${col.name}</span>
+          <span class="count">${items.length}</span>
+        </div>
+        <div class="col-body">${cards}</div>
+      </div>`;
+  }).join('');
+}
+
+function cardHTML(o){
+  const sc = storeColor(o.storeName || o.storeType);
+  const risk = o.riskLevel || 'normal';
+  const bairro = (o.address && o.address.neighborhood) || '—';
+  const act = NEXT_ACTION[o.status];
+  const actBtn = act
+    ? `<button class="act ${act.cls}" onclick="advance('${o.id}','${act.to}')">${act.label}</button>`
+    : '';
+  return `
+    <div class="card">
+      <div class="card-top">
+        <span class="store"><span class="sdot" style="background:${sc}"></span>${o.storeName||'—'}</span>
+        <span class="oid">#${o.externalOrderId||'?'}</span>
+      </div>
+      <div class="row"><span class="k">Bairro</span> ${bairro}</div>
+      <div class="row"><span class="time">⏱ ${relTime(o._statusSince || o.createdAt)} em ${STATUS_LABEL[o.status]||o.status}</span></div>
+      <div class="card-foot">
+        <span class="total">${fmtMoney(o.total)}</span>
+        <span class="badge ${risk}">${risk==='normal'?'ok':risk}</span>
+        ${actBtn}
+      </div>
+    </div>`;
+}
+
+// ============================================================
+//  AÇÕES (avançar status)
+// ============================================================
+async function advance(id, to){
+  if (state.source === 'api'){
+    try{
+      const r = await fetch(`${state.apiUrl}/api/orders/${id}/status`, {
+        method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status: to})
+      });
+      if(!r.ok){ const e = await r.json().catch(()=>({})); throw new Error(e?.error?.message || r.status); }
+      toast('Status atualizado');
+      fetchApi();
+    }catch(err){ toast('Erro: '+err.message); }
+    return;
+  }
+  // demo/firebase local: move localmente
+  const o = state.orders.find(x => x.id === id);
+  if(o){
+    o.status = (to === 'ready') ? 'waiting_grouping' : to; // espelha a regra do backend
+    o._statusSince = new Date().toISOString();
+    render();
+    toast('Status atualizado (demo)');
+  }
+}
+
+// ============================================================
+//  FONTES DE DADOS
+// ============================================================
+function stopSources(){
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer = null; }
+  if(state.fbUnsub){ try{state.fbUnsub();}catch(e){} state.fbUnsub = null; }
+}
+
+function setStatus(kind, text){
+  const p = document.getElementById('statusPill');
+  p.className = 'pill ' + kind;
+  document.getElementById('statusText').textContent = text;
+}
+
+function startDemo(){
+  stopSources();
+  state.orders = demoOrders();
+  setStatus('demo', 'Demonstração');
+  render();
+}
+
+async function fetchApi(){
+  try{
+    const r = await fetch(`${state.apiUrl}/api/orders`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    state.orders = Array.isArray(data) ? data : [];
+    setStatus('live', 'Conectado · API');
+    render();
+  }catch(err){
+    setStatus('error', 'Sem conexão com a API');
+  }
+}
+function startApi(){
+  stopSources();
+  fetchApi();
+  state.pollTimer = setInterval(fetchApi, 4000);
+}
+
+async function startFirebase(){
+  stopSources();
+  let cfg;
+  try{ cfg = JSON.parse(state.fbConfig); }
+  catch(e){ toast('Config do Firebase inválida'); return; }
+  setStatus('demo', 'Conectando ao Firebase…');
+  try{
+    const appMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const fsMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const app = appMod.initializeApp(cfg);
+    const db = fsMod.getFirestore(app);
+    state.fbUnsub = fsMod.onSnapshot(fsMod.collection(db, 'orders'), (snap)=>{
+      state.orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setStatus('live', 'Conectado · Firebase');
+      render();
+    }, (err)=> setStatus('error', 'Erro no Firebase'));
+  }catch(err){ setStatus('error', 'Falha ao carregar Firebase'); toast('Falha: '+err.message); }
+}
+
+function applySource(){
+  if (state.source === 'api') startApi();
+  else if (state.source === 'firebase') startFirebase();
+  else startDemo();
+}
+
+// ============================================================
+//  UI: modal, toast
+// ============================================================
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+const modalBg = document.getElementById('modalBg');
+document.getElementById('settingsBtn').onclick = ()=> modalBg.classList.add('open');
+document.getElementById('cancelBtn').onclick = ()=> modalBg.classList.remove('open');
+document.getElementById('refreshBtn').onclick = ()=> { if(state.source==='api') fetchApi(); else if(state.source==='demo') render(); toast('Atualizado'); };
+
+document.querySelectorAll('#sourceSeg button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('#sourceSeg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const src = b.dataset.src;
+    document.getElementById('apiField').style.display = src==='api' ? '' : 'none';
+    document.getElementById('fbField').style.display  = src==='firebase' ? '' : 'none';
+  };
+});
+
+document.getElementById('saveBtn').onclick = ()=>{
+  const active = document.querySelector('#sourceSeg button.on').dataset.src;
+  state.source = active;
+  state.apiUrl = document.getElementById('apiUrl').value.trim() || 'http://localhost:8080';
+  state.fbConfig = document.getElementById('fbConfig').value.trim();
+  modalBg.classList.remove('open');
+  applySource();
+};
+
+// atualiza tempos relativos a cada 30s
+setInterval(()=>{ if(state.orders.length) render(); }, 30000);
+
+// start
+startDemo();
+</script>
+</body>
+</html>

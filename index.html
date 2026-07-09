@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f1115" />
+<title>Audens Route — Entrar</title>
+<style>
+  :root{
+    --bg:#0f1115; --surface:#171a21; --surface-2:#1e222b; --border:#2a2f3a;
+    --text:#e7ebf0; --text-dim:#9aa4b2; --text-faint:#6b7484;
+    --accent:#4f8cff; --purple:#9b7dff; --green:#34c77b; --amber:#f5a524; --red:#f2545b;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:
+      radial-gradient(1200px 500px at 50% -10%, rgba(79,140,255,.14), transparent 60%),
+      var(--bg);
+    color:var(--text); display:grid; place-items:center; padding:24px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    width:100%; max-width:380px; background:var(--surface);
+    border:1px solid var(--border); border-radius:18px; padding:30px 28px;
+    box-shadow:0 10px 40px rgba(0,0,0,.4);
+  }
+  .brand{display:flex; align-items:center; gap:12px; margin-bottom:22px;}
+  .logo{
+    width:44px; height:44px; border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--purple));
+    display:grid; place-items:center; font-weight:800; color:#fff; font-size:20px;
+  }
+  .brand h1{font-size:18px; margin:0; line-height:1.1;}
+  .brand span{font-size:12.5px; color:var(--text-dim);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text-dim);}
+  .field input{
+    width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text);
+    border-radius:10px; padding:11px 13px; font-size:14px; font-family:inherit;
+  }
+  .field input:focus{outline:none; border-color:var(--accent);}
+  .btn-primary{
+    width:100%; border:none; background:var(--accent); color:#fff; font-weight:700;
+    padding:12px; border-radius:10px; font-size:14px; cursor:pointer; margin-top:4px;
+    transition:filter .15s;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary:disabled{opacity:.5; cursor:default;}
+  .err{color:var(--red); font-size:12.5px; margin-top:10px; min-height:16px;}
+  .divider{
+    display:flex; align-items:center; gap:12px; margin:22px 0 16px; color:var(--text-faint); font-size:11.5px;
+  }
+  .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--border);}
+  .roles-label{font-size:12px; color:var(--text-dim); margin-bottom:10px; text-align:center;}
+  .roles{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .role{
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text);
+    padding:11px 10px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; gap:9px; transition:background .15s,border-color .15s;
+  }
+  .role:hover{background:#262b36; border-color:var(--accent);}
+  .role .ic{width:9px; height:9px; border-radius:50%;}
+  .foot{margin-top:20px; text-align:center; font-size:11.5px; color:var(--text-faint); line-height:1.6;}
+  .mode-tag{
+    display:inline-block; margin-top:2px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600;
+    background:rgba(245,165,36,.14); color:var(--amber);
+  }
+  .mode-tag.live{background:rgba(52,199,123,.14); color:var(--green);}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>Audens Route</h1>
+        <span>Logística de delivery</span>
+      </div>
+    </div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" placeholder="voce@exemplo.com" required />
+      </div>
+      <div class="field">
+        <label for="password">Senha</label>
+        <input id="password" type="password" placeholder="••••••••" required />
+      </div>
+      <button class="btn-primary" id="submitBtn" type="submit">Entrar</button>
+      <div class="err" id="err"></div>
+    </form>
+
+    <div class="divider">acesso rápido (demonstração)</div>
+    <div class="roles-label">Entrar direto como:</div>
+    <div class="roles">
+      <button class="role" onclick="goAs('admin')"><span class="ic" style="background:var(--purple)"></span>Admin</button>
+      <button class="role" onclick="goAs('operator')"><span class="ic" style="background:var(--accent)"></span>Operador</button>
+      <button class="role" onclick="goAs('kitchen')"><span class="ic" style="background:var(--amber)"></span>Cozinha</button>
+      <button class="role" onclick="goAs('driver')"><span class="ic" style="background:var(--green)"></span>Motoboy</button>
+    </div>
+
+    <div class="foot">
+      <span id="modeTag" class="mode-tag">Modo demonstração</span><br/>
+      Preencha <code>config.js</code> com seu Firebase para o login real.
+    </div>
+  </div>
+
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script>
+  const CFG = window.AUDENS_CONFIG || {};
+  const HAS_FB = !!(CFG.firebase && CFG.firebase.apiKey);
+
+  // roteamento por papel
+  function pageForRole(role){
+    return role === 'driver' ? 'motoboy.html' : 'painel.html';
+  }
+  function goAs(role){
+    // demonstração: sem autenticação real, apenas encaminha para a tela do papel
+    sessionStorageSafe('audens_role', role);
+    location.href = pageForRole(role);
+  }
+  function sessionStorageSafe(k,v){ try{ sessionStorage.setItem(k,v);}catch(e){} }
+
+  if (HAS_FB){
+    const tag = document.getElementById('modeTag');
+    tag.textContent = 'Firebase conectado'; tag.classList.add('live');
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const err = document.getElementById('err');
+    const btn = document.getElementById('submitBtn');
+    err.textContent = '';
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!HAS_FB){
+      // sem Firebase configurado: orienta usar o acesso rápido
+      err.textContent = 'Firebase não configurado — use o acesso rápido abaixo (ou preencha config.js).';
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Entrando…';
+    try{
+      const appMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const authMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      const app = appMod.initializeApp(CFG.firebase);
+      const auth = authMod.getAuth(app);
+      const cred = await authMod.signInWithEmailAndPassword(auth, email, password);
+      // papel virá do custom claim (role) — carregado no token
+      const token = await cred.user.getIdTokenResult();
+      const role = (token.claims && token.claims.role) || 'operator';
+      sessionStorageSafe('audens_role', role);
+      location.href = pageForRole(role);
+    }catch(ex){
+      err.textContent = 'Não foi possível entrar. Verifique e-mail e senha.';
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  });
+</script>
+</body>
+</html>
