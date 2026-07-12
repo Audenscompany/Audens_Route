@@ -43,8 +43,13 @@
   .btn:hover{filter:brightness(1.08);}
 
   .store{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;}
-  .store-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .store-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
   .store-head .sdot{width:11px;height:11px;border-radius:50%;}
+  .logo-badge{width:42px;height:42px;border-radius:12px;overflow:hidden;flex-shrink:0;cursor:pointer;position:relative;
+    border:1px solid var(--border);display:grid;place-items:center;background:#120f1f;}
+  .logo-badge img{width:100%;height:100%;object-fit:cover;}
+  .logo-badge:hover::after{content:"trocar";position:absolute;inset:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center;}
+  .logo-badge .sdot{width:14px;height:14px;border-radius:50%;}
   .store-head b{font-size:15px;} .store-head .tag{font-size:11.5px;color:var(--text-dim);background:var(--surface-2);padding:2px 9px;border-radius:999px;}
   .store-head .right{margin-left:auto;display:flex;gap:8px;align-items:center;}
   .toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--text-dim);font-weight:600;}
@@ -101,6 +106,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<input type="file" id="logoInput" accept="image/*" style="display:none" />
 
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script>
@@ -127,7 +133,9 @@ function render(){
   box.innerHTML=stores.map(s=>`
     <div class="store">
       <div class="store-head">
-        <span class="sdot" style="background:${storeColor(s.type)}"></span>
+        <div class="logo-badge" onclick="pickLogo('${s.id}')" title="Trocar logo do cardápio">
+          ${s.logoUrl?`<img src="${s.logoUrl}" alt="">`:`<span class="sdot" style="background:${storeColor(s.type)}"></span>`}
+        </div>
         <b>${s.name}</b>
         <span class="tag">${s.type||'—'}</span>
         <span class="right">
@@ -170,6 +178,35 @@ function copyWh(id){
   const el=document.getElementById('wh-'+id); el.select(); el.setSelectionRange(0,99999);
   navigator.clipboard.writeText(el.value).then(()=>toast('URL copiada!')).catch(()=>toast('Selecionado — copie com Ctrl/Cmd+C'));
 }
+
+// ---- upload de logo por cardápio (comprime p/ data URL e salva no store.logoUrl) ----
+let logoTargetId=null;
+function pickLogo(id){ logoTargetId=id; document.getElementById('logoInput').value=''; document.getElementById('logoInput').click(); }
+function fileToDataUrl(file,size=112){
+  return new Promise((resolve,reject)=>{
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const c=document.createElement('canvas'); c.width=size; c.height=size;
+      const ctx=c.getContext('2d');
+      const scale=Math.max(size/img.width,size/img.height);
+      const w=img.width*scale, h=img.height*scale;
+      ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror=reject; img.src=url;
+  });
+}
+document.getElementById('logoInput').addEventListener('change', async (e)=>{
+  const file=e.target.files[0]; if(!file||!logoTargetId) return;
+  try{
+    toast('Enviando logo…');
+    const dataUrl=await fileToDataUrl(file);
+    const r=await fetch(`${API_URL}/api/stores/${logoTargetId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({logoUrl:dataUrl})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    toast('Logo atualizada'); load();
+  }catch(err){ toast('Erro ao enviar logo'); }
+});
 
 document.getElementById('addBtn').onclick=addStore;
 document.getElementById('newName').addEventListener('keydown',e=>{if(e.key==='Enter')addStore();});
