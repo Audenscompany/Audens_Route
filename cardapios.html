@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f1115" />
+<title>Audens Route — Cardápios</title>
+<style>
+  :root{
+    --bg:#0f1115; --surface:#171a21; --surface-2:#1e222b; --border:#2a2f3a;
+    --text:#e7ebf0; --text-dim:#9aa4b2; --text-faint:#6b7484;
+    --accent:#4f8cff; --green:#34c77b; --amber:#f5a524; --red:#f2545b; --purple:#9b7dff;
+    --radius:12px; --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.25);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:12px 20px;
+    background:rgba(15,17,21,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--purple));
+    display:grid;place-items:center;font-weight:800;color:#fff;font-size:16px;}
+  .brand h1{font-size:15px;margin:0;line-height:1.1;} .brand span{font-size:12px;color:var(--text-dim);}
+  .spacer{flex:1;}
+  a.navlink{color:var(--text-dim);text-decoration:none;font-size:13px;font-weight:600;padding:8px 12px;border:1px solid var(--border);border-radius:9px;}
+  a.navlink:hover{background:var(--surface-2);color:var(--text);}
+  .wrap{max-width:900px;margin:0 auto;padding:22px 20px 60px;}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:600;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);}
+  .pill.live .dot{background:var(--green);} .pill.error .dot{background:var(--red);}
+
+  h2{font-size:18px;margin:0 0 4px;} .sub{color:var(--text-dim);font-size:13px;margin:0 0 20px;}
+
+  .addcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+  .addrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;color:var(--text-dim);font-weight:600;}
+  .field input,.field select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:10px 12px;font-size:14px;font-family:inherit;}
+  .field.name{flex:1;min-width:180px;}
+  .btn{border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:10px 14px;border-radius:9px;font-size:13px;cursor:pointer;font-weight:700;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn:hover{filter:brightness(1.08);}
+
+  .store{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px;}
+  .store-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .store-head .sdot{width:11px;height:11px;border-radius:50%;}
+  .store-head b{font-size:15px;} .store-head .tag{font-size:11.5px;color:var(--text-dim);background:var(--surface-2);padding:2px 9px;border-radius:999px;}
+  .store-head .right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  .toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--text-dim);font-weight:600;}
+  .sw{width:34px;height:20px;border-radius:999px;background:#3a3f4b;position:relative;transition:background .2s;}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;}
+  .toggle.on .sw{background:var(--green);} .toggle.on .sw::after{left:16px;}
+  .del{border:none;background:none;color:var(--text-faint);cursor:pointer;font-size:13px;}
+  .del:hover{color:var(--red);}
+  .wh{margin-top:6px;}
+  .wh label{font-size:11.5px;color:var(--text-faint);display:block;margin-bottom:5px;}
+  .whrow{display:flex;gap:8px;}
+  .whrow input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:9px 11px;font-size:12px;font-family:ui-monospace,monospace;}
+  .copy{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:0 14px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .copy:hover{background:#262b36;}
+  .hint{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.5;}
+  .empty{color:var(--text-faint);text-align:center;padding:30px;border:1px dashed var(--border);border-radius:var(--radius);}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text);padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo">A</div><div><h1>Audens Route</h1><span>Cardápios & Integrações</span></div></div>
+  <div class="spacer"></div>
+  <div id="statusPill" class="pill"><span class="dot"></span><span id="statusText">Conectando…</span></div>
+  <a class="navlink" href="painel.html">← Painel</a>
+</header>
+
+<div class="wrap">
+  <h2>Seus cardápios</h2>
+  <p class="sub">Cadastre cada cardápio e cole a <b>URL de webhook</b> dele na plataforma do cardápio. Todo pedido que entrar lá cai aqui, identificado.</p>
+
+  <div class="addcard">
+    <div class="addrow">
+      <div class="field name">
+        <label>Nome do cardápio</label>
+        <input id="newName" type="text" placeholder="Ex.: Hamburgueria do Zé" />
+      </div>
+      <div class="field">
+        <label>Tipo</label>
+        <select id="newType">
+          <option value="hamburgueria">Hamburgueria</option>
+          <option value="pizzaria">Pizzaria</option>
+          <option value="restaurante">Restaurante</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <button class="btn primary" id="addBtn">+ Adicionar cardápio</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script>
+const CFG = window.AUDENS_CONFIG || {};
+const API_URL = CFG.apiUrl || '';
+let stores = [];
+
+function setStatus(kind,text){const p=document.getElementById('statusPill');p.className='pill '+kind;document.getElementById('statusText').textContent=text;}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
+function storeColor(t){t=(t||'').toLowerCase();if(t.includes('hambur'))return '#f5a524';if(t.includes('pizz'))return '#f2545b';return '#7a869a';}
+function webhookUrl(s){return `${API_URL}/api/webhooks/orders/${s.id}?key=${s.webhookSecret}`;}
+
+async function load(){
+  if(!API_URL){ setStatus('error','Backend não configurado'); return; }
+  try{
+    const r=await fetch(`${API_URL}/api/stores`); if(!r.ok) throw new Error('HTTP '+r.status);
+    stores=await r.json(); setStatus('live','Conectado'); render();
+  }catch(e){ setStatus('error','Sem conexão com o backend'); }
+}
+
+function render(){
+  const box=document.getElementById('list');
+  if(!stores.length){ box.innerHTML=`<div class="empty">Nenhum cardápio cadastrado ainda.<br/>Adicione o primeiro acima. 🍔🍕</div>`; return; }
+  box.innerHTML=stores.map(s=>`
+    <div class="store">
+      <div class="store-head">
+        <span class="sdot" style="background:${storeColor(s.type)}"></span>
+        <b>${s.name}</b>
+        <span class="tag">${s.type||'—'}</span>
+        <span class="right">
+          <span class="toggle ${s.active?'on':''}" onclick="toggleActive('${s.id}',${!s.active})"><span>${s.active?'Ativo':'Inativo'}</span><span class="sw"></span></span>
+          <button class="del" onclick="removeStore('${s.id}','${(s.name||'').replace(/'/g,'')}')">remover</button>
+        </span>
+      </div>
+      <div class="wh">
+        <label>URL de webhook (cole na plataforma deste cardápio)</label>
+        <div class="whrow">
+          <input readonly value="${webhookUrl(s)}" id="wh-${s.id}" />
+          <button class="copy" onclick="copyWh('${s.id}')">Copiar</button>
+        </div>
+        <div class="hint">Identificador: <b>${s.id}</b> · método <b>POST</b>. A chave no fim da URL autentica os pedidos deste cardápio.</div>
+      </div>
+    </div>`).join('');
+}
+
+async function addStore(){
+  const name=document.getElementById('newName').value.trim();
+  const type=document.getElementById('newType').value;
+  if(!name){ toast('Digite o nome do cardápio'); return; }
+  try{
+    const r=await fetch(`${API_URL}/api/stores`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,type})});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||('HTTP '+r.status));}
+    document.getElementById('newName').value='';
+    toast('Cardápio adicionado'); load();
+  }catch(e){ toast('Erro: '+e.message); }
+}
+async function toggleActive(id,active){
+  try{ await fetch(`${API_URL}/api/stores/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({active})}); load(); }
+  catch(e){ toast('Erro ao atualizar'); }
+}
+async function removeStore(id,name){
+  if(!confirm(`Remover o cardápio "${name}"? Os pedidos já recebidos continuam no sistema.`)) return;
+  try{ await fetch(`${API_URL}/api/stores/${id}`,{method:'DELETE'}); toast('Cardápio removido'); load(); }
+  catch(e){ toast('Erro ao remover'); }
+}
+function copyWh(id){
+  const el=document.getElementById('wh-'+id); el.select(); el.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(el.value).then(()=>toast('URL copiada!')).catch(()=>toast('Selecionado — copie com Ctrl/Cmd+C'));
+}
+
+document.getElementById('addBtn').onclick=addStore;
+document.getElementById('newName').addEventListener('keydown',e=>{if(e.key==='Enter')addStore();});
+load();
+</script>
+</body>
+</html>
