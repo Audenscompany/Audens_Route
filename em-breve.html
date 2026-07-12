@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Em construção</title>
+</head>
+<body>
+<template id="page">
+  <div class="soon"><div class="box">
+    <div class="ic" id="soonIc"></div>
+    <span class="tagf" id="soonTag">Em construção</span>
+    <h1 id="soonTitle">Tela em construção</h1>
+    <p id="soonText">Esta parte do sistema está sendo desenvolvida e entra numa das próximas fases. O menu já está pronto — a tela chega em breve.</p>
+    <a class="btn primary" href="dashboard.html">← Voltar ao Dashboard</a>
+  </div></div>
+</template>
+
+<script>
+  // define a página ativa no menu a partir do ?s=
+  (function(){var s=new URLSearchParams(location.search).get('s')||'';var map={'Agrupamento':'agrupamento','Rotas':'rotas','Motoboys':'motoboys','Métricas':'metricas','Configurações':'config'};window.PAGE=map[s]||'';window.__SEC=s;})();
+</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+  const sec=window.__SEC||'Esta tela';
+  const fases={'Rotas':'Fase 4','Motoboys':'Fase 2','Métricas':'Fase 5','Agrupamento':'Fase 3','Configurações':'Fase 1'};
+  document.getElementById('soonIc').innerHTML=AudensShell.IC.build;
+  document.getElementById('soonTag').textContent=(fases[sec]||'Em breve')+' · em construção';
+  document.getElementById('soonTitle').textContent=sec;
+  document.getElementById('soonText').textContent=`A tela de ${sec} está sendo desenvolvida e entra na ${fases[sec]||'próxima fase'} do projeto. O menu e a navegação já estão prontos.`;
+  AudensShell.setConn('');
+</script>
+</body>
+</html>

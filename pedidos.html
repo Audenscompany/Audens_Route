@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Pedidos</title>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:center"><div><h1>Pedidos</h1><p>Todos os pedidos que chegam dos cardápios, em tempo real.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <section class="kpis" id="kpis"></section>
+  <main class="board six" id="board"></main>
+</template>
+
+<script>window.PAGE='pedidos';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {IC,api,H,COLS,NEXT,setConn}=AudensShell;
+let stores=[],storeMap={},orders=[];
+function renderKPIs(){
+  const c=(sts)=>orders.filter(o=>sts.includes(o.status)).length;
+  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',orders.length,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues']];
+  document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div><div class="num">${k[3]}</div><div class="foot">em tempo real</div></div>`).join('');
+}
+function cardHTML(o){
+  const bairro=(o.address&&o.address.neighborhood)||'—';
+  const nx=NEXT[o.status];
+  const act=nx?`<button class="act" style="background:${nx[2]}" onclick="advance('${o.id}','${nx[0]}')">${nx[1]}</button>`:'';
+  return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">#${o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div><div class="bairro">${bairro}</div><div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div>${act}</div>`;
+}
+function renderBoard(){
+  document.getElementById('board').innerHTML=COLS.map(col=>{
+    const items=orders.filter(o=>col.st.includes(o.status));
+    const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
+    return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body" style="max-height:none">${cards}</div></div>`;
+  }).join('');
+}
+async function advance(id,to){try{await api.setStatus(id,to);load();}catch(e){AudensShell.toast('Erro: '+e.message);}}
+async function load(){
+  if(!api.hasBackend){setConn('err');renderKPIs();renderBoard();return;}
+  try{
+    const [so,or_]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[])]);
+    stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s); orders=Array.isArray(or_)?or_:[];
+    setConn('live');
+  }catch(e){setConn('err');}
+  renderKPIs();renderBoard();
+}
+load(); setInterval(load,4000);
+</script>
+</body>
+</html>

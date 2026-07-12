@@ -4,327 +4,66 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
 <title>Audens Route — Dashboard</title>
-<style>
-  :root{
-    --bg:#0a0913; --bg2:#0d0b17; --card:#141221; --card2:#191627; --line:#241f38;
-    --text:#eceaf5; --dim:#9c98b6; --faint:#6a6688;
-    --violet:#8b5cf6; --violet-2:#a855f7; --violet-3:#c084fc;
-    --green:#34d399; --amber:#fbbf24; --red:#f87171; --blue:#60a5fa; --cyan:#22d3ee;
-    --radius:16px;
-    font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:
-      radial-gradient(900px 520px at 12% -8%, rgba(124,58,237,.18), transparent 60%),
-      radial-gradient(800px 500px at 100% 0%, rgba(34,211,238,.06), transparent 55%),
-      var(--bg);
-    color:var(--text);-webkit-font-smoothing:antialiased;}
-  ::-webkit-scrollbar{width:9px;height:9px;} ::-webkit-scrollbar-thumb{background:#241f38;border-radius:9px;}
-  a{color:inherit;text-decoration:none;}
-  svg{display:block;}
-  .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh;}
-
-  /* SIDEBAR */
-  .sidebar{background:linear-gradient(180deg,#0e0b1b,#0a0913);border-right:1px solid var(--line);
-    display:flex;flex-direction:column;padding:24px 16px;position:sticky;top:0;height:100vh;}
-  .logo{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 8px 26px;}
-  .logo .txt{font-weight:900;letter-spacing:3px;font-size:22px;line-height:1;
-    background:linear-gradient(180deg,#fff,#c9bdf5);-webkit-background-clip:text;background-clip:text;color:transparent;
-    text-shadow:0 0 22px rgba(168,85,247,.35);}
-  .logo .txt small{display:block;font-size:11px;letter-spacing:9px;color:var(--violet-3);font-weight:800;margin-top:4px;text-align:center;text-shadow:0 0 14px rgba(168,85,247,.6);}
-  .nav{display:flex;flex-direction:column;gap:5px;margin-top:6px;}
-  .nav a{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:12px;color:var(--dim);font-size:14px;font-weight:600;transition:.15s;}
-  .nav a svg{width:20px;height:20px;flex-shrink:0;}
-  .nav a:hover{background:#171329;color:var(--text);}
-  .nav a.active{background:linear-gradient(90deg,rgba(139,92,246,.30),rgba(139,92,246,.06));color:#fff;
-    box-shadow:inset 0 0 0 1px rgba(139,92,246,.4),0 8px 20px rgba(124,58,237,.25);}
-  .nav a.active svg{color:var(--violet-3);}
-  .side-bottom{margin-top:auto;display:flex;flex-direction:column;gap:12px;}
-  .plan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;}
-  .plan .t{font-size:12.5px;font-weight:700;} .plan .v{font-size:11px;color:var(--faint);margin-bottom:9px;}
-  .bar{height:6px;border-radius:6px;background:#241f38;overflow:hidden;}
-  .bar > i{display:block;height:100%;width:78%;background:linear-gradient(90deg,var(--violet),var(--violet-3));border-radius:6px;box-shadow:0 0 10px rgba(168,85,247,.5);}
-  .plan .pct{float:right;font-size:11px;color:var(--violet-3);font-weight:800;}
-  .plan button{margin-top:12px;width:100%;background:#1d1830;border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;cursor:pointer;}
-  .support{display:flex;align-items:center;gap:11px;color:var(--dim);font-size:12px;padding:4px 8px;}
-  .support svg{width:20px;height:20px;color:var(--violet-3);}
-  .collapse{color:var(--faint);font-size:16px;padding:6px 8px;cursor:pointer;}
-
-  /* MAIN */
-  .main{display:flex;flex-direction:column;min-width:0;}
-  .topbar{display:flex;align-items:center;gap:18px;padding:16px 26px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,9,19,.82);backdrop-filter:blur(10px);z-index:10;}
-  .search{flex:1;max-width:440px;display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 14px;color:var(--faint);font-size:13px;}
-  .search svg{width:16px;height:16px;} .search .kbd{margin-left:auto;font-size:11px;background:#211c34;border-radius:6px;padding:2px 7px;color:var(--dim);}
-  .spacer{flex:1;}
-  .chip{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;} .chip svg{width:16px;height:16px;color:var(--faint);}
-  .bell{position:relative;width:40px;height:40px;border-radius:11px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;color:var(--dim);}
-  .bell svg{width:18px;height:18px;}
-  .bell .badge{position:absolute;top:-5px;right:-5px;background:var(--violet-2);color:#fff;font-size:10px;font-weight:800;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px;box-shadow:0 0 10px rgba(168,85,247,.6);}
-  .user{display:flex;align-items:center;gap:10px;cursor:pointer;}
-  .user .av{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#c084fc);display:grid;place-items:center;font-weight:800;color:#fff;position:relative;font-size:14px;}
-  .user .av .on{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--bg);}
-  .user .nm{font-size:13.5px;font-weight:700;line-height:1.1;} .user .rl{font-size:11px;color:var(--faint);}
-  .user .cv{color:var(--faint);width:16px;height:16px;}
-
-  .content{padding:22px 26px 32px;display:flex;flex-direction:column;gap:20px;}
-
-  .accounts{display:flex;align-items:stretch;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
-  .accounts .lead{display:flex;flex-direction:column;justify-content:center;min-width:150px;}
-  .accounts .lead b{font-size:13.5px;display:flex;align-items:center;gap:6px;} .accounts .lead b svg{width:14px;height:14px;color:var(--faint);}
-  .accounts .lead span{font-size:11.5px;color:var(--faint);margin-top:3px;}
-  .acct{display:flex;align-items:center;gap:11px;border:1px solid var(--line);border-radius:13px;padding:11px 14px;min-width:176px;background:#120f1f;}
-  .acct.sel{border-color:rgba(139,92,246,.6);box-shadow:0 0 0 1px rgba(139,92,246,.4),0 8px 24px rgba(124,58,237,.25);background:#171227;}
-  .acct .lg{width:38px;height:38px;border-radius:11px;overflow:hidden;flex-shrink:0;}
-  .acct .nm{font-size:13px;font-weight:700;} .acct .ty{font-size:11px;color:var(--faint);}
-  .acct .st{font-size:10.5px;color:var(--green);display:flex;align-items:center;gap:5px;margin-top:2px;}
-  .acct .st::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
-  .acct.add{border-style:dashed;color:var(--dim);justify-content:center;cursor:pointer;min-width:120px;flex-direction:column;gap:6px;font-size:12px;font-weight:600;}
-  .acct.add .plus{width:34px;height:34px;border-radius:10px;background:#1c1730;display:grid;place-items:center;color:var(--violet-3);} .acct.add .plus svg{width:18px;height:18px;}
-
-  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;}
-  @media(max-width:1250px){.kpis{grid-template-columns:repeat(3,1fr);}}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
-  .kpi .top{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px;font-weight:600;}
-  .kpi .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;} .kpi .ic svg{width:19px;height:19px;}
-  .kpi .num{font-size:30px;font-weight:800;letter-spacing:-1px;margin:12px 0 6px;}
-  .kpi .foot{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .kpi .delta{font-size:11.5px;font-weight:700;} .kpi .delta.up{color:var(--green);} .kpi .delta.down{color:var(--red);} .kpi .delta span{color:var(--faint);font-weight:500;}
-
-  .grid2{display:grid;grid-template-columns:1fr 344px;gap:18px;align-items:start;}
-  @media(max-width:1250px){.grid2{grid-template-columns:1fr;}}
-  .board{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px;}
-  .col-h{display:flex;align-items:center;gap:8px;margin:2px 4px 10px;}
-  .col-h .nm{font-size:13px;font-weight:700;} .col-h .ct{margin-left:auto;font-size:11px;color:var(--dim);background:#1b1730;border-radius:999px;padding:2px 8px;font-weight:700;}
-  .ocard{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:10px;}
-  .ocard .r1{display:flex;align-items:center;gap:8px;}
-  .ocard .r1 .lg{width:28px;height:28px;border-radius:8px;overflow:hidden;flex-shrink:0;}
-  .ocard .oid{font-size:12.5px;font-weight:800;} .ocard .store{font-size:11px;color:var(--dim);}
-  .ocard .more{margin-left:auto;color:var(--faint);cursor:pointer;} .ocard .more svg{width:16px;height:16px;}
-  .ocard .chk{margin-left:auto;color:var(--green);} .ocard .chk svg{width:18px;height:18px;}
-  .ocard .bairro{font-size:12px;color:var(--dim);margin:9px 0 7px;}
-  .ocard .r2{display:flex;align-items:center;justify-content:space-between;gap:6px;}
-  .ocard .tm{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:5px;} .ocard .tm svg{width:12px;height:12px;}
-  .ocard .tm.ok{color:var(--green);} .ocard .val{font-size:12.5px;font-weight:800;}
-  .pill-sem{font-size:10px;font-weight:700;color:var(--amber);background:rgba(251,191,36,.14);border-radius:6px;padding:2px 7px;}
-  .rota-tag{font-size:10.5px;color:var(--violet-3);font-weight:700;}
-  .col-more{color:var(--violet-3);font-size:12px;font-weight:700;text-align:center;padding:9px;cursor:pointer;}
-
-  .rail{display:flex;flex-direction:column;gap:16px;}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;}
-  .panel .ph{display:flex;align-items:center;margin-bottom:12px;} .panel .ph b{font-size:14px;} .panel .ph a{margin-left:auto;color:var(--violet-3);font-size:12px;font-weight:700;}
-  .q{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid #1c1830;} .q:last-child{border-bottom:none;}
-  .q .pos{width:16px;color:var(--faint);font-size:12px;font-weight:700;}
-  .q .av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-size:12px;font-weight:700;}
-  .q .nm{font-size:12.5px;font-weight:600;} .q .eta{margin-left:auto;font-size:11.5px;color:var(--amber);font-weight:700;}
-
-  .route .rc{border:1px solid var(--line);border-radius:12px;padding:12px;background:#120f1f;}
-  .route .rc .hd{display:flex;align-items:center;gap:8px;margin-bottom:11px;} .route .rc .hd b{font-size:12.5px;} .route .rc .hd .score{margin-left:auto;font-size:10.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:999px;padding:3px 10px;}
-  .route .mapwrap{display:flex;gap:12px;}
-  .route .drv{flex:1;} .route .drv .dl{font-size:11px;color:var(--faint);}
-  .route .drv .dn{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px;font-weight:700;}
-  .route .drv .dn .av{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-size:11px;}
-  .route .drv .rate{font-size:11px;color:var(--violet-3);font-weight:700;}
-  .route .stops{margin-top:8px;} .route .stops .s{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim);padding:5px 0;border-top:1px solid #1a1530;}
-  .route .stops .s .n{width:17px;height:17px;border-radius:50%;background:#241f38;display:grid;place-items:center;font-size:9px;font-weight:800;color:var(--violet-3);}
-  .route .stops .s .v{margin-left:auto;color:var(--violet-3);font-weight:700;}
-  .rbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
-  .rbtns button{border-radius:9px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--line);background:#1a1530;color:var(--text);display:flex;align-items:center;justify-content:center;gap:6px;}
-  .rbtns button svg{width:14px;height:14px;}
-  .rbtns button.approve{grid-column:1/-1;background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;box-shadow:0 8px 22px rgba(124,58,237,.35);}
-
-  .alert{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid #1c1830;} .alert:last-child{border-bottom:none;}
-  .alert .ai{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;} .alert .ai svg{width:17px;height:17px;}
-  .alert .at{font-size:12.5px;font-weight:700;} .alert .ad{font-size:11px;color:var(--faint);margin-top:2px;}
-  .alert .tm{margin-left:auto;font-size:10.5px;color:var(--faint);white-space:nowrap;}
-  .warn{background:rgba(251,191,36,.14);color:var(--amber);} .danger{background:rgba(248,113,113,.14);color:var(--red);} .info{background:rgba(52,211,153,.14);color:var(--green);}
-  .foot{padding:16px 26px;border-top:1px solid var(--line);display:flex;justify-content:space-between;color:var(--faint);font-size:11.5px;}
-</style>
 </head>
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="logo">
-      <svg width="88" height="80" viewBox="0 0 88 80" fill="none">
-        <defs>
-          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#6d28d9"/></linearGradient>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        </defs>
-        <g filter="url(#glow)">
-          <circle cx="44" cy="38" r="30" stroke="url(#lg)" stroke-width="3.5"/>
-          <path d="M22 50 L37 28 L46 41 L52 32 L64 50 Z" fill="url(#lg)"/>
-          <path d="M18 54 C31 45 57 45 70 54" stroke="#d8b4fe" stroke-width="3" fill="none" stroke-linecap="round"/>
-          <circle cx="70" cy="54" r="3" fill="#e9d5ff"/>
-        </g>
-      </svg>
-      <div class="txt">AUDENS<small>ROUTE</small></div>
-    </div>
-    <nav class="nav" id="nav"></nav>
-    <div class="side-bottom">
-      <div class="plan"><span class="pct">78%</span><div class="t">Plano Profissional</div><div class="v">Válido até 24/07/2025</div><div class="bar"><i></i></div><button>Gerenciar plano</button></div>
-      <div class="support" id="support"></div>
-      <div class="collapse">«</div>
-    </div>
-  </aside>
-
-  <div class="main">
-    <header class="topbar">
-      <div class="search" id="search"></div>
-      <div class="spacer"></div>
-      <div class="chip" id="chipDate"></div>
-      <div class="chip" id="chipTime"></div>
-      <div class="bell" id="bell"></div>
-      <div class="user"><div class="av">RM<span class="on"></span></div><div><div class="nm">Rafael Martins</div><div class="rl">Administrador</div></div><span class="cv" id="cv"></span></div>
-    </header>
-
-    <div class="content">
-      <section class="accounts" id="accounts"></section>
-      <section class="kpis" id="kpis"></section>
-      <div class="grid2">
-        <main class="board" id="board"></main>
-        <aside class="rail">
-          <div class="panel"><div class="ph"><b>Fila de motoboys</b><a href="#">Ver todos</a></div><div id="queue"></div></div>
-          <div class="panel route">
-            <div class="ph"><b>Sugestões de rota</b><a href="#">Ver todas</a></div>
-            <div class="rc" id="routeCard"></div>
-          </div>
-          <div class="panel"><div class="ph"><b>Alertas</b><a href="#">Ver todos</a></div><div id="alerts"></div></div>
-        </aside>
-      </div>
-    </div>
-    <div class="foot"><span>Audens Route · Sistema Inteligente de Logística e Entregas</span><span>© 2025 Audens Route. Todos os direitos reservados.</span></div>
+<template id="page">
+  <section class="accounts" id="accounts"></section>
+  <section class="kpis" id="kpis"></section>
+  <div class="grid2">
+    <main class="board six" id="board"></main>
+    <aside class="rail">
+      <div class="panel"><div class="ph"><b>Fila de motoboys</b></div><div class="panel-empty">Nenhum motoboy online<small>disponível na Fase 2</small></div></div>
+      <div class="panel"><div class="ph"><b>Sugestões de rota</b></div><div class="panel-empty">Sem sugestões no momento<small>agrupamento automático — Fase 3</small></div></div>
+      <div class="panel"><div class="ph"><b>Alertas</b></div><div class="panel-empty" id="alerts">Sem alertas</div></div>
+    </aside>
   </div>
-</div>
+</template>
 
+<script>window.PAGE='dashboard';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
 <script>
-/* ---------- ícones SVG (line) ---------- */
-const S=(p,o='')=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${o}>${p}</svg>`;
-const IC={
-  home:S('<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-5h5v5"/>'),
-  orders:S('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4"/><path d="M9 11h6M9 15h4"/>'),
-  group:S('<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/>'),
-  route:S('<circle cx="6" cy="19" r="2.4"/><circle cx="18" cy="5" r="2.4"/><path d="M8.4 19H14a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8h4.6"/>'),
-  moto:S('<circle cx="12" cy="7.5" r="3.5"/><path d="M5 20.5c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/>'),
-  chart:S('<line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="5"/><line x1="18" y1="20" x2="18" y2="14"/>'),
-  store:S('<path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/>'),
-  gear:S('<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L16.2 3H8l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L8 21h8l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5A7 7 0 0 0 19 12Z"/>'),
-  support:S('<path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M20 19a3 3 0 0 1-3 3h-3"/>'),
-  search:S('<circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/>'),
-  cal:S('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>'),
-  clock:S('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
-  bell:S('<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/>'),
-  chev:S('<path d="m6 9 6 6 6-6"/>'),
-  more:S('<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>'),
-  check:S('<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.4 2.4 4.6-5"/>'),
-  plus:S('<path d="M12 5v14M5 12h14"/>'),
-  inbox:S('<path d="M3 13h5l1.5 2.5h5L21 13"/><path d="M5 13V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7"/>'),
-  chef:S('<path d="M7 20h10"/><path d="M6.5 17h11v-2.5a4 4 0 0 0-1.2-8.4A4 4 0 0 0 9 4.6 4 4 0 0 0 6.5 14V17Z"/>'),
-  package:S('<path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>'),
-  truck:S('<rect x="3" y="7" width="11" height="9" rx="1"/><path d="M14 10h4l3 3v3h-3"/><circle cx="7.5" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/>'),
-  thumb:S('<path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Z"/><path d="M7 11l4-7a2 2 0 0 1 2 2v3h5.2a2 2 0 0 1 2 2.4l-1.2 6A2 2 0 0 1 17 20H7"/>'),
-  approve:S('<path d="m5 13 4 4 10-11"/>'),
-  edit:S('<path d="M4 20h4L18 10l-4-4L4 16v4Z"/><path d="M13 6l4 4"/>'),
-  swap:S('<path d="M7 8h11l-3-3M17 16H6l3 3"/>'),
-  recalc:S('<path d="M4 12a8 8 0 0 1 13-6l3 2M20 12a8 8 0 0 1-13 6l-3-2"/>'),
-  warn:S('<path d="M12 4 2.5 20h19L12 4Z"/><path d="M12 10v4M12 17.5v.5"/>'),
-};
-/* logos de marca (SVG) */
-const LOGO={
-  burger:`<svg viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#3a2a10"/><path d="M8 17c0-4.4 5.4-7.5 12-7.5S32 12.6 32 17H8Z" fill="#f5b544"/><path d="M8 12.5c1.4.9 3 .3 4.4-.2 1.6-.6 3.2.6 4.8.2 1.6-.5 3.2-1.1 4.8-.4 1.4.6 3 .9 4.4.2" stroke="#fff5dd" stroke-width="1.1" fill="none" opacity=".6"/><rect x="8" y="19" width="24" height="3.4" rx="1.5" fill="#3aa35a"/><rect x="8" y="21.4" width="24" height="3.4" rx="1.5" fill="#d3452e"/><path d="M8 25c0 3.6 5.4 6 12 6s12-2.4 12-6v-1.2H8V25Z" fill="#d79b46"/></svg>`,
-  pizza:`<svg viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#3a1414"/><path d="M20 7 33 31a28 28 0 0 1-26 0L20 7Z" fill="#f0b24c"/><path d="M20 12 30 29a22 22 0 0 1-20 0L20 12Z" fill="#e8632e"/><circle cx="17.5" cy="21" r="2.1" fill="#b02020"/><circle cx="23" cy="25" r="2.1" fill="#b02020"/><circle cx="20" cy="29" r="1.7" fill="#b02020"/></svg>`,
-  store:`<svg viewBox="0 0 40 40"><rect width="40" height="40" rx="10" fill="#1c1730"/><path d="M11 18l1.5-6h15l1.5 6" stroke="#c084fc" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M11 18h18v1.6a3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-4 0V18Z" stroke="#c084fc" stroke-width="1.8" fill="none"/><path d="M13 22v7h14v-7" stroke="#c084fc" stroke-width="1.8" fill="none"/></svg>`,
-};
+const {IC,LOGO,api,H,COLS,NEXT,setConn}=AudensShell;
+let stores=[],storeMap={},orders=[];
 
-/* NAV */
-const NAV=[['home','Dashboard','dashboard.html',1],['orders','Pedidos','painel.html'],['group','Agrupamento','agrupamento.html'],['route','Rotas','#'],['moto','Motoboys','#'],['chart','Métricas','metricas.html'],['store','Lojas','cardapios.html'],['gear','Configurações','#']];
-document.getElementById('nav').innerHTML=NAV.map(n=>`<a class="${n[3]?'active':''}" href="${n[2]}">${IC[n[0]]}<span>${n[1]}</span></a>`).join('');
-document.getElementById('support').innerHTML=`${IC.support}<div><b style="font-size:12px;color:var(--text)">Suporte</b><br><span style="font-size:11px;color:var(--faint)">Central de ajuda</span></div>`;
-document.getElementById('search').innerHTML=`${IC.search} Buscar pedidos, lojas, motoboys… <span class="kbd">⌘K</span>`;
-document.getElementById('chipDate').innerHTML=`${IC.cal} 23 de Maio de 2025`;
-document.getElementById('chipTime').innerHTML=`${IC.clock} Sex 14:35`;
-document.getElementById('bell').innerHTML=`${IC.bell}<span class="badge">8</span>`;
-document.getElementById('cv').innerHTML=IC.chev;
-
-/* CONTAS */
-const ACC=[['burger','Burger FC',1],['pizza','Pizza FC'],['store','Loja 3'],['store','Loja 4']];
-document.getElementById('accounts').innerHTML=`<div class="lead"><b>Contas conectadas</b><span>2 a 5 contas podem ser conectadas</span></div>`
-  +ACC.map(a=>`<div class="acct ${a[2]?'sel':''}"><div class="lg">${LOGO[a[0]]}</div><div><div class="nm">${a[1]}</div><div class="ty">Cardápio Web</div><div class="st">Ativo</div></div></div>`).join('')
-  +`<div class="acct add"><span class="plus">${IC.plus}</span>Conectar conta</div>`;
-
-/* sparkline (área) */
-function spark(color){
-  const seed=color.length; const pts=[]; let y=16;
-  for(let i=0;i<13;i++){y+=Math.sin(i*1.1+seed)*3 + (i>8?-1.4:0.6); y=Math.max(4,Math.min(26,y)); pts.push([i*7,+y.toFixed(1)]);}
-  const line=pts.map(p=>p.join(',')).join(' ');
-  const area=`0,30 ${line} ${pts[pts.length-1][0]},30`;
-  const id='g'+seed+color.replace(/[^a-z0-9]/gi,'');
-  return `<svg width="92" height="32" viewBox="0 0 92 32"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".35"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="${area}" fill="url(#${id})"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function renderAccounts(){
+  const lead=`<div class="lead"><b>Contas conectadas</b><span>${stores.length} conectada(s) · até 5</span></div>`;
+  const cards=stores.map((s,i)=>`<div class="acct ${i===0?'sel':''}"><div class="lg">${H.storeBadge(s)}</div><div><div class="nm">${s.name}</div><div class="ty">Cardápio Web</div><div class="st">${s.active===false?'Inativo':'Ativo'}</div></div></div>`).join('');
+  document.getElementById('accounts').innerHTML=lead+cards+`<a class="acct add" href="cardapios.html"><span class="plus">${IC.plus}</span>Conectar conta</a>`;
 }
-const KPI=[
-  ['inbox','rgba(96,165,250,.15)','#60a5fa','128','Pedidos recebidos','+18%','vs ontem',1],
-  ['chef','rgba(251,191,36,.15)','#fbbf24','34','Em preparo','+6%','vs ontem',1],
-  ['check','rgba(52,211,153,.15)','#34d399','22','Prontos','-8%','vs ontem',0],
-  ['package','rgba(139,92,246,.15)','#a855f7','16','Aguardando agrupamento','+4%','vs ontem',1],
-  ['truck','rgba(34,211,238,.15)','#22d3ee','8','Rotas em andamento','+2%','vs ontem',1],
-  ['thumb','rgba(52,211,153,.15)','#34d399','96','Entregas concluídas','+22%','vs ontem',1],
-];
-document.getElementById('kpis').innerHTML=KPI.map(k=>`<div class="kpi">
-  <div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div>
-  <div class="num">${k[3]}</div>
-  <div class="foot"><div class="delta ${k[7]?'up':'down'}">${k[5]} <span>${k[6]}</span></div>${spark(k[2])}</div></div>`).join('');
-
-/* BOARD */
-const B=[
-  {nm:'Recebido',ct:18,cards:[['12874','Burger FC','burger','Jardim América','2 min','R$ 45,90'],['12873','Pizza FC','pizza','Vila Madalena','3 min','R$ 62,50'],['12872','Burger FC','burger','Pinheiros','4 min','R$ 37,80']],rest:15},
-  {nm:'Em preparo',ct:34,cards:[['12871','Pizza FC','pizza','Moema','8 min','R$ 58,90','prep'],['12870','Burger FC','burger','Itaim Bibi','9 min','R$ 41,00','prep'],['12869','Pizza FC','pizza','Vila Olímpia','12 min','R$ 73,40','prep']],rest:31},
-  {nm:'Pronto',ct:22,cards:[['12868','Burger FC','burger','Brooklin','1 min','R$ 36,90','ok'],['12867','Pizza FC','pizza','Campo Belo','2 min','R$ 65,50','ok'],['12866','Burger FC','burger','Moema','3 min','R$ 42,80','ok']],rest:19},
-  {nm:'Aguardando agrupamento',ct:16,cards:[['12865','Pizza FC','pizza','Vila Nova Conceição','7 min','R$ 61,90','sem'],['12864','Burger FC','burger','Jardins','10 min','R$ 38,50','sem'],['12863','Pizza FC','pizza','Pinheiros','12 min','R$ 59,00','sem']],rest:13,more:'Ver todas as rotas'},
-  {nm:'Em rota',ct:8,cards:[['12862','Burger FC','burger','Paraíso','12 min','R$ 41,00','rota','Rota 8 · 2/3'],['12861','Pizza FC','pizza','Morumbi','18 min','R$ 62,50','rota','Rota 7 · 1/3'],['12860','Burger FC','burger','Vila Mariana','25 min','R$ 37,80','rota','Rota 6 · 3/3']],rest:0,more:'Ver todas as rotas'},
-  {nm:'Entregue',ct:96,cards:[['12859','Burger FC','burger','Ipiranga','8 min','R$ 35,90','done'],['12858','Pizza FC','pizza','Saúde','12 min','R$ 57,80','done'],['12857','Burger FC','burger','Aclimação','15 min','R$ 33,50','done']],rest:0,more:'Ver histórico'},
-];
-document.getElementById('board').innerHTML=B.map(col=>{
-  const cards=col.cards.map(c=>{
-    const [oid,store,lg,bairro,tm,val,tag,rota]=c;
-    let tmHtml=`<span class="tm">${IC.clock} ${tm}</span>`;
-    if(tag==='prep') tmHtml=`<span class="tm" style="color:var(--amber)">${IC.clock} ${tm}</span>`;
-    if(tag==='ok') tmHtml=`<span class="tm ok">${IC.check} ${tm} pronto</span>`;
-    if(tag==='done') tmHtml=`<span class="tm ok">${IC.check} Entregue há ${tm}</span>`;
-    const right = tag==='sem'?`<span class="pill-sem">Sem lote</span>`: (tag==='rota'?`<span class="rota-tag">${rota}</span>`:'');
-    const corner = tag==='done'?`<span class="chk">${IC.check}</span>`:`<span class="more">${IC.more}</span>`;
-    return `<div class="ocard">
-      <div class="r1"><div class="lg">${LOGO[lg]}</div><div><div class="oid">#${oid}</div><div class="store">${store}</div></div>${corner}</div>
-      <div class="bairro">${bairro}</div>
-      <div class="r2">${tmHtml}<div style="display:flex;align-items:center;gap:8px">${right}<span class="val">${val}</span></div></div>
-    </div>`;
+function renderKPIs(){
+  const c=(sts)=>orders.filter(o=>sts.includes(o.status)).length;
+  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',orders.length,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando agrupamento'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues']];
+  document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div><div class="num">${k[3]}</div><div class="foot">em tempo real</div></div>`).join('');
+}
+function cardHTML(o){
+  const bairro=(o.address&&o.address.neighborhood)||'—';
+  const nx=NEXT[o.status];
+  const act=nx?`<button class="act" style="background:${nx[2]}" onclick="advance('${o.id}','${nx[0]}')">${nx[1]}</button>`:'';
+  return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">#${o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
+    <div class="bairro">${bairro}</div>
+    <div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div>${act}</div>`;
+}
+function renderBoard(){
+  document.getElementById('board').innerHTML=COLS.map(col=>{
+    const items=orders.filter(o=>col.st.includes(o.status));
+    const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
+    return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body">${cards}</div></div>`;
   }).join('');
-  const more = col.rest>0?`<div class="col-more">+ ${col.rest} pedidos</div>`:(col.more?`<div class="col-more">${col.more}</div>`:'');
-  return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${col.ct}</span></div>${cards}${more}</div>`;
-}).join('');
-
-/* FILA */
-const Q=[['LF','Lucas Ferreira','Chega em 3 min'],['MS','Matheus Santos','Chega em 6 min'],['JV','João Victor','Chega em 10 min'],['RL','Rafael Lima','Chega em 12 min'],['BH','Bruno Henrique','Chega em 15 min']];
-document.getElementById('queue').innerHTML=Q.map((q,i)=>`<div class="q"><span class="pos">${i+1}</span><span class="av">${q[0]}</span><span class="nm">${q[1]}</span><span class="eta">${q[2]}</span></div>`).join('');
-
-/* ROTA SUGERIDA */
-document.getElementById('routeCard').innerHTML=`
-  <div class="hd"><b>Rota sugerida · 3 pedidos</b><span class="score">Score 92%</span></div>
-  <div class="mapwrap">
-    <div class="drv"><div class="dl">Motoboy sugerido</div><div class="dn"><span class="av">LF</span>Lucas Ferreira</div><div class="rate">92% ★ 4.9</div></div>
-    <svg width="128" height="120" viewBox="0 0 128 120" style="flex-shrink:0"><rect width="128" height="120" rx="10" fill="#0f0c1c"/>
-      <g stroke="#211c34" stroke-width="1"><line x1="0" y1="34" x2="128" y2="34"/><line x1="0" y1="70" x2="128" y2="70"/><line x1="40" y1="0" x2="40" y2="120"/><line x1="86" y1="0" x2="86" y2="120"/></g>
-      <path d="M34 40 L92 30 L64 96" stroke="#a855f7" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-      <g font-size="9" font-weight="800" fill="#fff"><circle cx="34" cy="40" r="11" fill="#7c3aed"/><text x="34" y="43.5" text-anchor="middle">1</text><circle cx="92" cy="30" r="11" fill="#7c3aed"/><text x="92" y="33.5" text-anchor="middle">2</text><circle cx="64" cy="96" r="11" fill="#7c3aed"/><text x="64" y="99.5" text-anchor="middle">3</text></g></svg>
-  </div>
-  <div class="stops">
-    <div class="s"><span class="n">1</span> #12868 · Brooklin <span class="v">R$ 36,90</span></div>
-    <div class="s"><span class="n">2</span> #12865 · Vila Nova Conceição <span class="v">R$ 61,90</span></div>
-    <div class="s"><span class="n">3</span> #12864 · Jardins <span class="v">R$ 38,50</span></div>
-  </div>
-  <div class="rbtns"><button class="approve">${IC.approve} Aprovar rota</button><button>${IC.edit} Editar rota</button><button>${IC.swap} Trocar motoboy</button><button style="grid-column:1/-1">${IC.recalc} Recalcular</button></div>`;
-
-/* ALERTAS */
-const AL=[['warn','warn','Pedido pronto há 10 min sem lote','3 pedidos aguardando agrupamento','Agora'],['warn','danger','Rota com risco alto','Rota 7 · Trânsito intenso detectado','5 min'],['moto','info','Motoboy chegando','Lucas Ferreira chega em 3 min','3 min']];
-document.getElementById('alerts').innerHTML=AL.map(a=>`<div class="alert"><div class="ai ${a[1]}">${IC[a[0]]}</div><div><div class="at">${a[2]}</div><div class="ad">${a[3]}</div></div><div class="tm">${a[4]}</div></div>`).join('');
+}
+async function advance(id,to){try{await api.setStatus(id,to);load();}catch(e){AudensShell.toast('Erro: '+e.message);}}
+async function load(){
+  if(!api.hasBackend){setConn('err');renderAccounts();renderKPIs();renderBoard();return;}
+  try{
+    const [so,or_]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[])]);
+    stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s); orders=Array.isArray(or_)?or_:[];
+    setConn('live');
+  }catch(e){setConn('err');}
+  renderAccounts();renderKPIs();renderBoard();
+}
+load(); setInterval(load,5000);
 </script>
 </body>
 </html>
