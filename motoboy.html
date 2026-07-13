@@ -100,6 +100,26 @@
   .pitem:active{border-color:var(--violet);} .pitem .pav{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;flex-shrink:0;} .pitem span{font-size:14px;font-weight:600;} .pitem small{display:block;font-size:11px;color:var(--faint);font-weight:400;}
   .phint{font-size:11px;color:var(--faint);text-align:center;margin-top:8px;line-height:1.5;}
   .vtitle{font-size:20px;font-weight:800;margin:2px 2px 12px;}
+  .stop .info{cursor:pointer;}
+  .navbtn{display:inline-flex;align-items:center;gap:6px;background:rgba(34,211,238,.14);color:var(--cyan);border:1px solid rgba(34,211,238,.3);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;} .navbtn svg{width:14px;height:14px;} .navbtn:active{filter:brightness(1.15);}
+  .seemore{font-size:11px;color:var(--violet3);font-weight:700;margin-top:4px;display:inline-flex;align-items:center;gap:4px;}
+  .sheet{position:fixed;inset:0;background:rgba(6,4,14,.72);z-index:120;display:flex;align-items:flex-end;justify-content:center;}
+  .sheetbox{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));}
+  .sheet-h{display:flex;align-items:center;gap:10px;margin-bottom:4px;} .sheet-h .oid{font-size:12px;color:var(--faint);font-weight:700;} .sheet-h h3{font-size:19px;margin:0;} .sheet-h .x{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--card2);border:1px solid var(--line);color:var(--dim);display:grid;place-items:center;cursor:pointer;font-size:18px;}
+  .sheet .sub{font-size:12.5px;color:var(--dim);line-height:1.45;margin-bottom:12px;}
+  .omap{width:100%;height:200px;border:1px solid var(--line);border-radius:14px;margin:4px 0 6px;display:block;background:var(--card2);}
+  .maplink{font-size:11.5px;color:var(--violet3);font-weight:700;text-decoration:none;}
+  .sheet .grp{font-size:11px;color:var(--faint);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px;}
+  .di{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);} .di:first-of-type{border-top:none;}
+  .di .dq{font-size:13px;font-weight:800;color:var(--violet3);flex-shrink:0;min-width:26px;}
+  .di .dn{flex:1;font-size:13.5px;font-weight:600;} .di .dp{font-size:13px;font-weight:700;flex-shrink:0;}
+  .dopt{font-size:12px;color:var(--dim);font-weight:500;margin-top:3px;} .dnote{font-size:12px;color:var(--amber);margin-top:3px;font-style:italic;}
+  .totline{display:flex;justify-content:space-between;font-size:13px;color:var(--dim);padding:4px 0;} .totline.big{font-size:16px;font-weight:800;color:var(--text);border-top:1px solid var(--line);margin-top:5px;padding-top:9px;}
+  .paybox{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin-top:6px;} .paybox .pm{font-size:14px;font-weight:800;} .paybox .tr{font-size:12.5px;color:var(--amber);margin-top:4px;} .paybox .on{color:var(--green);}
+  .obsbox{background:rgba(245,181,68,.08);border:1px solid rgba(245,181,68,.25);border-radius:12px;padding:12px 13px;margin-top:10px;font-size:12.5px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
+  .sheet-acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+  .sheet-acts .sa{border-radius:13px;padding:14px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;border:1px solid var(--line2);background:var(--card2);color:var(--text);} .sheet-acts .sa svg{width:18px;height:18px;}
+  .sheet-acts .sa.nav{background:linear-gradient(120deg,#0891b2,#22d3ee);border:none;color:#062a30;} .sheet-acts .sa.deliver{background:linear-gradient(120deg,#7c3aed,#a855f7);border:none;color:#fff;grid-column:1/-1;} .sheet-acts .sa.call{color:var(--green);}
 </style>
 </head>
 <body>
@@ -352,10 +372,11 @@ function stopHTML(o,i,total,status){
   const phone=(o.customer&&o.customer.phone||'').replace(/[^0-9+]/g,'');
   const charge=`<div class="charge ${pago?'paid':'due'}">${pago?'Pago online':('A cobrar '+money(o.total))}<small>· ${payLabel(o.paymentMethod)}</small></div>`;
   const call=phone?`<a class="callbtn" href="tel:${phone}" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>Ligar</a>`:'';
+  const nav=`<button class="navbtn" onclick="event.stopPropagation();navOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>Navegar</button>`;
   return `<div class="stop ${delivered?'done':''}">
     <div class="marker"><div class="num">${delivered?'✓':(i+1)}${i===0&&total>1?`<span class="cnt">${total}</span>`:''}</div>${i<total-1?'<div class="line"></div>':''}</div>
-    <div class="info"><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div>${cname?`<div class="cust">${cname}</div>`:''}<div class="addr">${addr}</div>${charge}</div>
-    <div class="rgt"><span class="eta">${eta}</span>${call}${canDeliver?`<button class="mini" style="padding:6px 11px;flex-direction:row" onclick="deliver('${o.id}')">Entregue</button>`:`<span class="prio"><span class="d"></span>Padrão</span>`}</div>
+    <div class="info" onclick="openOrder(${i})"><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div>${cname?`<div class="cust">${cname}</div>`:''}<div class="addr">${addr}</div>${charge}<div class="seemore">ver detalhes do pedido ›</div></div>
+    <div class="rgt"><span class="eta">${eta}</span>${nav}${call}${canDeliver?`<button class="mini" style="padding:6px 11px;flex-direction:row" onclick="event.stopPropagation();deliver('${o.id}')">Entregue</button>`:`<span class="prio"><span class="d"></span>Padrão</span>`}</div>
   </div>`;
 }
 function mainActsHTML(st){
@@ -409,6 +430,76 @@ function openMaps(){
   window.open('https://www.google.com/maps/dir/?api=1&destination='+dest+(way?'&waypoints='+way:''),'_blank');
 }
 function ligarLoja(){ toast('Telefone da loja em breve'); }
+// ---------- mapa por pedido ----------
+function orderMapUrl(o){
+  const a=o.address||{};
+  if(a.lat!=null&&a.lng!=null) return 'https://www.google.com/maps/dir/?api=1&destination='+a.lat+','+a.lng;
+  const q=encodeURIComponent([a.street,a.number,a.neighborhood,a.city].filter(Boolean).join(', '));
+  return 'https://www.google.com/maps/dir/?api=1&destination='+q;
+}
+function navOne(i){ const o=(route&&route.orderDetails||[])[i]; if(!o){toast('Sem endereço');return;} window.open(orderMapUrl(o),'_blank'); }
+// mapa embutido (OpenStreetMap, sem chave de API) mostrando o pino do endereço do pedido
+function osmEmbed(lat,lng){ const d=0.0045; const bbox=[lng-d,lat-d,lng+d,lat+d].join('%2C'); return 'https://www.openstreetmap.org/export/embed.html?bbox='+bbox+'&layer=mapnik&marker='+lat+'%2C'+lng; }
+function mapBlockHTML(A){
+  if(A.lat!=null&&A.lng!=null){
+    return `<iframe class="omap" loading="lazy" referrerpolicy="no-referrer" src="${osmEmbed(A.lat,A.lng)}"></iframe>
+      <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=${A.lat},${A.lng}" target="_blank">abrir no Google Maps ›</a>`;
+  }
+  return '<div class="sub">Localização no mapa indisponível para este pedido.</div>';
+}
+// ---------- detalhes do pedido (estilo Cardápio Web) ----------
+function channelLabel(c){ c=(c||'').toLowerCase(); if(c.includes('ifood'))return 'iFood'; if(c.includes('99'))return '99Food'; if(c.includes('portal')||c.includes('catalog')||c.includes('propr'))return 'Próprio'; return c?c:''; }
+function openOrder(i){ const o=(route&&route.orderDetails||[])[i]; if(!o)return; renderOrderSheet(o,i); }
+function closeOrder(){ const ov=document.getElementById('ordSheet'); if(ov)ov.remove(); }
+function renderOrderSheet(o,i){
+  const A=o.address||{};
+  const addr=A.text||[[A.street,A.number].filter(Boolean).join(', '),A.complement,A.neighborhood,A.city].filter(Boolean).join(' · ')||'—';
+  const cname=(o.customer&&o.customer.name)||'';
+  const phone=(o.customer&&o.customer.phone||'').replace(/[^0-9+]/g,'');
+  const items=Array.isArray(o.items)?o.items:[];
+  const itemsHTML=items.length?items.map(it=>`
+    <div class="di"><div class="dq">${it.quantity||1}x</div>
+      <div class="dn">${it.name||'Item'}
+        ${(it.options||[]).map(op=>`<div class="dopt">${op.price>0?'+ ':'• '}${(op.quantity>1?op.quantity+'x ':'')}${op.name}${op.price>0?' ('+money(op.price)+')':''}</div>`).join('')}
+        ${it.notes?`<div class="dnote">Obs: ${it.notes}</div>`:''}
+      </div><div class="dp">${money(it.total)}</div></div>`).join(''):'<div class="sub">Itens não disponíveis para este pedido.</div>';
+  const sub=Number(o.subtotal)||items.reduce((s,it)=>s+(Number(it.total)||0),0);
+  const fee=Number(o.deliveryFee)||0, add=Number(o.additionalFee)||0;
+  const pago=isPaid(o);
+  const troco=Number(o.changeFor)||0;
+  const trocoLine=(!pago&&troco>0)?`<div class="tr">Troco para ${money(troco)} · levar ${money(Math.max(0,troco-(Number(o.total)||0)))} de troco</div>`:'';
+  const payHTML=`<div class="paybox"><div class="pm">${pago?'<span class="on">Pago online</span>':('A cobrar '+money(o.total))}</div><div class="sub" style="margin:2px 0 0">Forma: ${payLabel(o.paymentMethod)}</div>${trocoLine}</div>`;
+  const canal=channelLabel(o.salesChannel);
+  const mkt=o.marketplaceId?`Pedido ${canal||'marketplace'} Nº ${o.marketplaceId}`:'';
+  const obs=[mkt,o.observation].filter(Boolean).join('\n');
+  const canDeliver=route&&route.status==='in_progress'&&o.status!=='delivered';
+  const call=phone?`<a class="sa call" href="tel:${phone}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>Ligar</a>`:'<span></span>';
+  const deliverBtn=canDeliver?`<button class="sa deliver" onclick="closeOrder();deliver('${o.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m5 12 5 5 9-11"/></svg>Marcar entregue</button>`:'';
+  let ov=document.getElementById('ordSheet');
+  if(!ov){ ov=document.createElement('div'); ov.id='ordSheet'; ov.className='sheet'; document.body.appendChild(ov); }
+  ov.onclick=(e)=>{ if(e.target===ov)closeOrder(); };
+  ov.innerHTML=`<div class="sheetbox">
+    <div class="sheet-h"><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}${canal?' · '+canal:''}</div><h3>${A.neighborhood||'Entrega'}</h3></div><div class="x" onclick="closeOrder()">✕</div></div>
+    <div class="sub">${cname?('<b>'+cname+'</b> · '):''}${addr}${A.reference?(' · Ref: '+A.reference):''}</div>
+    <div class="grp">Localização</div>
+    ${mapBlockHTML(A)}
+    <div class="grp">Itens do pedido</div>
+    ${itemsHTML}
+    <div class="grp">Valores</div>
+    <div class="totline"><span>Subtotal</span><span>${money(sub)}</span></div>
+    <div class="totline"><span>Taxa de entrega</span><span>+ ${money(fee)}</span></div>
+    ${add>0?`<div class="totline"><span>Taxa adicional</span><span>+ ${money(add)}</span></div>`:''}
+    <div class="totline big"><span>Total</span><span>${money(o.total)}</span></div>
+    <div class="grp">Pagamento</div>
+    ${payHTML}
+    ${obs?`<div class="grp">Observações</div><div class="obsbox">${obs}</div>`:''}
+    <div class="sheet-acts">
+      <button class="sa nav" onclick="navOne(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>Navegar até aqui</button>
+      ${call}
+      ${deliverBtn}
+    </div>
+  </div>`;
+}
 
 function histRow(o){
   const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
