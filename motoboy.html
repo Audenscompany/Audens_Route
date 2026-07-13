@@ -120,6 +120,7 @@
           <div class="opt online"><span class="dot"></span>Online</div>
         </div>
       </div>
+      <div id="geoStatus" style="font-size:12px;margin-top:11px;text-align:center"></div>
     </div>
     <div class="card store-card" id="waitCard">
       <div class="store-head">
@@ -241,6 +242,7 @@ const api={
   driver:(id)=>j(API+'/api/drivers/'+id),
   patchDriver:(id,b)=>j(API+'/api/drivers/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
   setStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
+  location:(id,lat,lng)=>j(API+'/api/drivers/'+id+'/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng})}),
   route:(id)=>j(API+'/api/drivers/'+id+'/route'),
   history:(id)=>j(API+'/api/drivers/'+id+'/history'),
   settings:()=>j(API+'/api/settings'),
@@ -289,8 +291,29 @@ function renderStatus(){
 }
 async function toggleOnline(){
   if(!driver){toast('Motoboy não identificado');return;}
-  try{ driver=await api.setStatus(driver.id,!driver.online); renderStatus(); toast(driver.online?'Você está online':'Você ficou offline'); load(); }
+  try{ driver=await api.setStatus(driver.id,!driver.online); renderStatus(); toast(driver.online?'Você está online':'Você ficou offline'); if(driver.online)startGeo();else stopGeo(); load(); }
   catch(e){ toast('Erro: '+e.message); }
+}
+// ---------- GPS / geofence ----------
+let geoTimer=null, geoState=null;
+function sendLocation(){
+  if(!navigator.geolocation||!driver||!driver.online)return;
+  navigator.geolocation.getCurrentPosition(async p=>{
+    if(!driver||!driver.online)return;
+    try{ geoState=await api.location(driver.id,p.coords.latitude,p.coords.longitude); renderGeo(); }catch(e){}
+  }, err=>{ geoState={error:err.code}; renderGeo(); }, {enableHighAccuracy:true,timeout:12000,maximumAge:15000});
+}
+function startGeo(){ if(geoTimer)return; sendLocation(); geoTimer=setInterval(()=>{ if(driver&&driver.online)sendLocation(); else stopGeo(); },20000); }
+function stopGeo(){ if(geoTimer){clearInterval(geoTimer);geoTimer=null;} geoState=null; renderGeo(); }
+function renderGeo(){
+  const el=document.getElementById('geoStatus'); if(!el)return;
+  if(!driver||!driver.online){ el.innerHTML=''; return; }
+  if(!('geolocation' in navigator)){ el.innerHTML='<span style="color:var(--faint)">Este aparelho não tem GPS disponível</span>'; return; }
+  if(geoState&&geoState.error){ el.innerHTML='<span style="color:var(--amber)">📍 Ative a localização do celular para entrar na fila por GPS</span>'; return; }
+  if(!geoState){ el.innerHTML='<span style="color:var(--faint)">Buscando sua localização…</span>'; return; }
+  if(!geoState.hasStoreLocation){ el.innerHTML='<span style="color:var(--faint)">Peça ao operador para cadastrar o endereço da loja (fila por GPS)</span>'; return; }
+  if(geoState.inside){ el.innerHTML='<span style="color:var(--green)">✓ Você está na loja — na fila</span>'; }
+  else { el.innerHTML=`<span style="color:var(--dim)">A ${geoState.distanceMeters} m da loja · aproxime-se para entrar na fila</span>`; }
 }
 function stopHTML(o,i,total,status){
   const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
@@ -413,6 +436,7 @@ async function load(){
   if(!API){document.getElementById('conn').textContent='Configure a API (config.js).';return;}
   if(!driver){ driver=await resolveDriver(); if(!driver){document.getElementById('conn').textContent='Nenhum motoboy vinculado a este acesso. Cadastre em Usuários.';return;} }
   renderStatus();
+  if(driver&&driver.online){ startGeo(); } else { stopGeo(); }
   try{
     const [q,r,h,cfg]=await Promise.all([api.queue().catch(()=>[]),api.route(driver.id).catch(()=>null),api.history(driver.id).catch(()=>[]),api.settings().catch(()=>({}))]);
     fee=Number(cfg&&cfg.deliveryFeePerOrder)||5;

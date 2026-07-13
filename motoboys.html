@@ -91,7 +91,11 @@ function renderList(){
 function renderQueue(){
   const box=document.getElementById('queue');
   if(!queue.length){ box.innerHTML=`<div class="panel-empty">Nenhum motoboy online<small>eles entram na fila ao ficar online no app</small></div>`; return; }
-  box.innerHTML=queue.map((d,i)=>`<div class="q"><span class="qpos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${d.name||''}</div><div style="font-size:10.5px;color:var(--faint)">disponível</div></div></div>`).join('');
+  box.innerHTML=queue.map((d,i)=>{
+    const loja=d.isInsideStoreGeofence;
+    const sub=loja?'<span style="color:var(--green)">na loja</span>':(d.distanceToStoreMeters!=null?`a ${d.distanceToStoreMeters} m`:'disponível');
+    return `<div class="q"><span class="qpos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${d.name||''}</div><div style="font-size:10.5px;color:var(--faint)">${sub}</div></div></div>`;
+  }).join('');
 }
 async function saveFee(){
   const v=parseFloat(document.getElementById('feeInput').value);

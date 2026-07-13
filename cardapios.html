@@ -69,6 +69,10 @@ function render(){
         <div class="whrow"><input id="tk-${s.id}" value="${s.apiToken||''}" placeholder="cole aqui o token da loja (Cardápio Web → Configurações → Integrações → API)" /><button class="copy" onclick="saveToken('${s.id}')">Salvar</button></div>
         <div class="hint">${s.apiToken?'Token salvo ✓ — os detalhes dos pedidos são buscados automaticamente a cada pedido.':'Sem token, o pedido chega só com número e status. Cole o token desta loja para trazer cliente, endereço e valor.'}</div>
       </div>
+      <div class="wh" style="margin-top:12px"><label>Endereço da loja (para a fila por GPS / geofence e distância da rota)</label>
+        <div class="whrow"><input id="ad-${s.id}" value="${s.address||''}" placeholder="Rua, número, bairro, cidade" /><button class="copy" onclick="saveAddress('${s.id}')">Salvar</button></div>
+        <div class="hint">${(s.lat!=null&&s.lng!=null)?'Localização definida ✓ — usada para detectar a chegada do motoboy na loja.':'Sem localização. Cadastre o endereço para ativar a fila por GPS (chegada automática na loja).'}</div>
+      </div>
     </div>`).join('');
 }
 async function addStore(){
@@ -80,6 +84,7 @@ async function toggleActive(id,active){ try{ await api.patchStore(id,{active}); 
 async function removeStore(id,name){ if(!confirm(`Remover "${name}"? Os pedidos já recebidos continuam no sistema.`))return; try{ await api.delStore(id); toast('Removido'); load(); }catch(e){ toast('Erro'); } }
 function copyWh(id){ const el=document.getElementById('wh-'+id); el.select(); el.setSelectionRange(0,99999); navigator.clipboard.writeText(el.value).then(()=>toast('URL copiada!')).catch(()=>toast('Selecionado — Ctrl/Cmd+C')); }
 async function saveToken(id){ const v=document.getElementById('tk-'+id).value.trim(); try{ await api.patchStore(id,{apiToken:v}); toast(v?'Token salvo — buscando detalhes…':'Token removido'); load(); if(v)fetch(`${API}/api/enrich-pending`).then(r=>r.json()).then(x=>toast(`Detalhes atualizados: ${x.enriched||0} pedido(s)`)).catch(()=>{}); }catch(e){ toast('Erro ao salvar token'); } }
+async function saveAddress(id){ const v=document.getElementById('ad-'+id).value.trim(); try{ toast('Salvando endereço…'); await api.patchStore(id,{address:v}); toast(v?'Endereço salvo e localizado':'Endereço removido'); load(); }catch(e){ toast('Erro ao salvar endereço'); } }
 
 let logoTarget=null;
 function pickLogo(id){ logoTarget=id; const i=document.getElementById('logoInput'); i.value=''; i.click(); }
