@@ -123,6 +123,7 @@
     driverHistory:(id)=>j(API+'/api/drivers/'+id+'/history'),
     // ciclo da rota
     assignRoute:(id,driverId)=>j(API+'/api/routes/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
+    assignNext:(id)=>j(API+'/api/routes/'+id+'/assign-next',{method:'POST'}),
     acceptRoute:(id)=>j(API+'/api/routes/'+id+'/accept',{method:'POST'}),
     startRoute:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
     completeOrder:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
