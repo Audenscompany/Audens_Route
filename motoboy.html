@@ -16,6 +16,7 @@
   body{margin:0;background:radial-gradient(700px 320px at 50% -8%,rgba(139,92,246,.16),transparent 60%),var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
   .wrap{max-width:480px;margin:0 auto;min-height:100vh;padding:14px 14px 96px;}
   .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;}
+  .view{display:none;} .view.on{display:block;}
   .top{display:flex;align-items:center;gap:12px;padding:6px 2px 12px;}
   .burger{width:26px;height:26px;color:var(--dim);}
   .brand{display:flex;align-items:center;gap:9px;}
@@ -23,8 +24,8 @@
   .brand .tx{font-weight:800;letter-spacing:.14em;font-size:15px;line-height:1;} .brand .tx small{display:block;font-size:8.5px;letter-spacing:.32em;color:var(--violet3);font-weight:700;margin-top:2px;}
   .top .sp{margin-left:auto;}
   .bell{position:relative;color:var(--dim);width:24px;height:24px;} .bell .b{position:absolute;top:-5px;right:-5px;background:var(--violet);color:#fff;font-size:9px;font-weight:800;border-radius:999px;min-width:15px;height:15px;display:grid;place-items:center;padding:0 3px;}
-  .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#5b3fa8,#a855f7);display:grid;place-items:center;font-weight:800;position:relative;font-size:15px;}
-  .av .on{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--bg);}
+  .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#5b3fa8,#a855f7);display:grid;place-items:center;font-weight:800;position:relative;font-size:15px;overflow:hidden;flex-shrink:0;}
+  .av img{width:100%;height:100%;object-fit:cover;} .av .on{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--bg);}
   .statusrow{display:flex;align-items:center;}
   .statusrow .l .k{font-size:12px;color:var(--dim);} .statusrow .l .v{font-size:15px;font-weight:700;margin-top:2px;} .statusrow .l .v .off{color:var(--red);} .statusrow .l .v .onl{color:var(--green);}
   .toggle{margin-left:auto;display:flex;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;cursor:pointer;user-select:none;}
@@ -71,15 +72,23 @@
   .hist .chk{width:26px;height:26px;border-radius:50%;background:rgba(52,211,153,.16);color:var(--green);display:grid;place-items:center;flex-shrink:0;} .hist .chk svg{width:15px;height:15px;}
   .hist .oid{font-size:12.5px;font-weight:800;} .hist .ad{font-size:11.5px;color:var(--dim);}
   .hist .rgt{margin-left:auto;text-align:right;} .hist .st{font-size:11.5px;color:var(--green);font-weight:700;} .hist .tm{font-size:10.5px;color:var(--faint);} .hist .vl{font-size:12.5px;font-weight:800;color:var(--violet3);}
-  .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:rgba(14,10,26,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
-  .tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:10.5px;font-weight:600;cursor:pointer;padding:6px 0;} .tabbar .tab svg{width:22px;height:22px;} .tabbar .tab.on{color:var(--violet3);}
   .wbadge{margin-left:auto;font-size:14px;font-weight:800;color:var(--green);background:rgba(52,211,153,.14);border-radius:999px;padding:6px 14px;}
   .wallet{display:flex;gap:10px;}
   .wallet .wc{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:14px 12px;text-align:center;} .wallet .wc.grow{background:linear-gradient(135deg,rgba(52,211,153,.12),var(--card2));border-color:rgba(52,211,153,.3);}
   .wallet .n{font-size:19px;font-weight:800;line-height:1.1;} .wallet .l{font-size:10.5px;color:var(--faint);margin-top:4px;}
+  .earnbig{text-align:center;padding:10px 0 4px;} .earnbig .v{font-size:38px;font-weight:800;color:var(--green);line-height:1;} .earnbig .l{font-size:12px;color:var(--dim);margin-top:6px;}
+  .prof-top{display:flex;flex-direction:column;align-items:center;gap:12px;padding:6px 0 4px;}
+  .prof-av{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#5b3fa8,#a855f7);display:grid;place-items:center;font-weight:800;font-size:34px;position:relative;cursor:pointer;overflow:hidden;}
+  .prof-av img{width:100%;height:100%;object-fit:cover;} .prof-av .cam{position:absolute;bottom:0;right:0;width:30px;height:30px;border-radius:50%;background:var(--violet);border:3px solid var(--card);display:grid;place-items:center;color:#fff;} .prof-av .cam svg{width:15px;height:15px;}
+  .prof-name{font-size:20px;font-weight:800;} .prof-role{font-size:12px;color:var(--violet3);font-weight:700;}
+  .prow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);} .prow:last-child{border-bottom:none;} .prow .pi{color:var(--violet3);width:20px;height:20px;flex-shrink:0;} .prow .pk{font-size:11px;color:var(--faint);} .prow .pv{font-size:13.5px;font-weight:600;}
+  .btn-out{width:100%;border:1px solid var(--line2);background:var(--card);color:var(--red);border-radius:13px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:6px;}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:rgba(14,10,26,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
+  .tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:10.5px;font-weight:600;cursor:pointer;padding:6px 0;} .tabbar .tab svg{width:22px;height:22px;} .tabbar .tab.on{color:var(--violet3);}
   .empty{color:var(--faint);font-size:13px;text-align:center;padding:22px 8px;}
   .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:80;max-width:88%;text-align:center;} .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
   .conn{font-size:11px;color:var(--faint);text-align:center;padding:4px;}
+  .vtitle{font-size:20px;font-weight:800;margin:2px 2px 12px;}
 </style>
 </head>
 <body>
@@ -98,76 +107,124 @@
     <div class="av" id="av"><span id="avInit">M</span><span class="on" id="avOn" style="display:none"></span></div>
   </div>
 
-  <div class="card">
-    <div class="statusrow">
-      <div class="l"><div class="k">Status</div><div class="v" id="statusTxt">Você está <span class="off">offline</span></div></div>
-      <div class="toggle" id="toggle" onclick="toggleOnline()">
-        <div class="opt offline">Offline<span class="dot"></span></div>
-        <div class="opt online"><span class="dot"></span>Online</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card store-card" id="waitCard">
-    <div class="store-head">
-      <div class="store-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>
-      <div class="store-txt"><div class="tag">Na loja</div><h2 id="waitTitle">Aguardando rota</h2><p id="waitSub">Fique disponível para receber uma rota.</p></div>
-      <svg class="store-ill" viewBox="0 0 96 64" fill="none"><path d="M14 40l4-14h20l4 14" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round"/><rect x="16" y="40" width="24" height="16" stroke="#8b5cf6" stroke-width="2"/><path d="M40 30 C64 26 70 40 82 22" stroke="#c084fc" stroke-width="2" stroke-dasharray="3 4" fill="none"/><circle cx="83" cy="20" r="5" fill="#a855f7"/></svg>
-    </div>
-    <div class="queue-bar">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#c084fc" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/><path d="M16 5.5a2.6 2.6 0 0 1 0 5"/></svg>
-      <span class="n"><b id="queueN">0</b> motoboys disponíveis na sua região</span>
-      <a href="javascript:void(0)" onclick="toast('Fila completa em breve')">Ver fila ›</a>
-    </div>
-  </div>
-
-  <div id="routeArea" style="display:none">
+  <!-- ============ PAINEL ============ -->
+  <div class="view on" id="view-painel">
     <div class="card">
-      <div class="sec-h"><b>Rota atual</b><span class="badge wait" id="rBadge">Aguardando aceitação</span></div>
-      <div class="rstats">
-        <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div><div><div class="n" id="rStops">0 paradas</div><div class="l">Sequência</div></div></div>
-        <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="n" id="rTime">— min</div><div class="l">Tempo estimado</div></div></div>
-        <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H14a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8h4.4"/></svg></div><div><div class="n" id="rDist">— km</div><div class="l">Distância total</div></div></div>
+      <div class="statusrow">
+        <div class="l"><div class="k">Status</div><div class="v" id="statusTxt">Você está <span class="off">offline</span></div></div>
+        <div class="toggle" id="toggle" onclick="toggleOnline()">
+          <div class="opt offline">Offline<span class="dot"></span></div>
+          <div class="opt online"><span class="dot"></span>Online</div>
+        </div>
       </div>
-      <div class="divide"></div>
-      <div id="stops"></div>
-      <div class="rsum">
-        <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span><div><div class="n" id="sPed">0 pedidos</div><div class="l" id="sPedV">R$ 0,00</div></div></div>
-        <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><div><div class="n" id="sFee">R$ —</div><div class="l">Valor estimado</div></div></div>
-        <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/></svg></span><div><div class="n" id="sRate">—</div><div class="l">Taxa aceitação</div></div></div>
+    </div>
+    <div class="card store-card" id="waitCard">
+      <div class="store-head">
+        <div class="store-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>
+        <div class="store-txt"><div class="tag">Na loja</div><h2>Aguardando rota</h2><p>Fique disponível para receber uma rota.</p></div>
+        <svg class="store-ill" viewBox="0 0 96 64" fill="none"><path d="M14 40l4-14h20l4 14" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round"/><rect x="16" y="40" width="24" height="16" stroke="#8b5cf6" stroke-width="2"/><path d="M40 30 C64 26 70 40 82 22" stroke="#c084fc" stroke-width="2" stroke-dasharray="3 4" fill="none"/><circle cx="83" cy="20" r="5" fill="#a855f7"/></svg>
       </div>
-      <div class="acts" id="mainActs"></div>
-      <div class="acts2">
-        <button class="mini" onclick="openMaps()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Abrir no Maps</button>
-        <button class="mini" onclick="recusar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>Recusar rota</button>
-        <button class="mini" onclick="toast('Chat de suporte em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/></svg>Chat suporte</button>
-        <button class="mini" onclick="ligarLoja()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>Ligar para loja</button>
+      <div class="queue-bar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#c084fc" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/><path d="M16 5.5a2.6 2.6 0 0 1 0 5"/></svg>
+        <span class="n"><b id="queueN">0</b> motoboys disponíveis na sua região</span>
+        <a href="javascript:void(0)" onclick="go('entregas')">Ver ›</a>
+      </div>
+    </div>
+    <div id="routeArea" style="display:none">
+      <div class="card">
+        <div class="sec-h"><b>Rota atual</b><span class="badge wait" id="rBadge">Aguardando aceitação</span></div>
+        <div class="rstats">
+          <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div><div><div class="n" id="rStops">0 paradas</div><div class="l">Sequência</div></div></div>
+          <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="n" id="rTime">— min</div><div class="l">Tempo estimado</div></div></div>
+          <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H14a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8h4.4"/></svg></div><div><div class="n" id="rDist">— km</div><div class="l">Distância total</div></div></div>
+        </div>
+        <div class="divide"></div>
+        <div id="stops"></div>
+        <div class="rsum">
+          <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span><div><div class="n" id="sPed">0 pedidos</div><div class="l" id="sPedV">R$ 0,00</div></div></div>
+          <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><div><div class="n" id="sFee">R$ —</div><div class="l">Você ganha</div></div></div>
+          <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/></svg></span><div><div class="n" id="sRate">—</div><div class="l">Taxa aceitação</div></div></div>
+        </div>
+        <div class="acts" id="mainActs"></div>
+        <div class="acts2">
+          <button class="mini" onclick="openMaps()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Abrir no Maps</button>
+          <button class="mini" onclick="recusar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>Recusar rota</button>
+          <button class="mini" onclick="toast('Chat de suporte em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/></svg>Chat suporte</button>
+          <button class="mini" onclick="ligarLoja()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>Ligar para loja</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-h"><b>Ganhos do dia</b><span class="wbadge" id="wEarn">R$ 0,00</span></div>
+      <div class="wallet">
+        <div class="wc"><div class="n" id="wCount">0</div><div class="l">entregas hoje</div></div>
+        <div class="wc"><div class="n" id="wFee">R$ 0,00</div><div class="l">por entrega</div></div>
+        <div class="wc grow"><div class="n" id="wTotal" style="color:var(--green)">R$ 0,00</div><div class="l">a receber</div></div>
       </div>
     </div>
   </div>
 
-  <div class="card" id="walletCard">
-    <div class="sec-h"><b>Ganhos do dia</b><span class="wbadge" id="wEarn">R$ 0,00</span></div>
-    <div class="wallet">
-      <div class="wc"><div class="n" id="wCount">0</div><div class="l">entregas hoje</div></div>
-      <div class="wc"><div class="n" id="wFee">R$ 0,00</div><div class="l">por entrega</div></div>
-      <div class="wc grow"><div class="n" id="wTotal" style="color:var(--green)">R$ 0,00</div><div class="l">a receber</div></div>
-    </div>
+  <!-- ============ ENTREGAS ============ -->
+  <div class="view" id="view-entregas">
+    <div class="vtitle">Entregas</div>
+    <div class="card" id="entregasCard"><div class="empty">Nenhuma entrega ativa.<br>Fique online para receber rotas.</div></div>
   </div>
 
-  <div class="card hist">
-    <div class="sec-h"><b>Histórico do dia</b><a class="badge" style="margin-left:auto;color:var(--violet3)" href="javascript:void(0)" onclick="toast('Histórico completo em breve')">Ver todos</a></div>
-    <div id="history"><div class="empty">Nenhuma entrega hoje ainda.</div></div>
+  <!-- ============ HISTÓRICO ============ -->
+  <div class="view" id="view-historico">
+    <div class="vtitle">Histórico</div>
+    <div class="card hist"><div id="historyFull"><div class="empty">Nenhuma entrega ainda.</div></div></div>
   </div>
+
+  <!-- ============ CARTEIRA ============ -->
+  <div class="view" id="view-carteira">
+    <div class="vtitle">Carteira</div>
+    <div class="card">
+      <div class="earnbig"><div class="v" id="cTotal">R$ 0,00</div><div class="l">a receber pelas entregas de hoje</div></div>
+      <div class="wallet" style="margin-top:10px">
+        <div class="wc"><div class="n" id="cCount">0</div><div class="l">entregas hoje</div></div>
+        <div class="wc"><div class="n" id="cFee">R$ 0,00</div><div class="l">por entrega</div></div>
+      </div>
+    </div>
+    <div class="card hist">
+      <div class="sec-h"><b>Entregas de hoje</b></div>
+      <div id="carteiraList"><div class="empty">Nenhuma entrega hoje.</div></div>
+    </div>
+    <div style="text-align:center;color:var(--faint);font-size:11.5px;padding:0 8px">O pagamento é combinado com o operador. Este valor é uma referência das entregas do dia.</div>
+  </div>
+
+  <!-- ============ PERFIL ============ -->
+  <div class="view" id="view-perfil">
+    <div class="vtitle">Perfil</div>
+    <div class="card">
+      <div class="prof-top">
+        <div class="prof-av" id="profAv" onclick="document.getElementById('photoInput').click()">
+          <span id="profInit">M</span>
+          <span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.2"/></svg></span>
+        </div>
+        <div style="text-align:center"><div class="prof-name" id="profName">—</div><div class="prof-role">Motoboy</div></div>
+        <div style="font-size:11.5px;color:var(--faint)">Toque na foto para trocar</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="prow"><svg class="pi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><div><div class="pk">E-mail</div><div class="pv" id="profEmail">—</div></div></div>
+      <div class="prow"><svg class="pi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg><div><div class="pk">Telefone</div><div class="pv" id="profPhone">—</div></div></div>
+      <div class="prow"><svg class="pi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/></svg><div><div class="pk">Entregas hoje</div><div class="pv" id="profDeliv">0</div></div></div>
+    </div>
+    <button class="btn-out" onclick="logout()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0 3-3m-3 3 3 3"/></svg>Sair da conta</button>
+  </div>
+
   <div class="conn" id="conn"></div>
 </div>
 
+<input type="file" id="photoInput" accept="image/*" style="display:none" />
+
 <div class="tabbar">
-  <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Painel</div>
-  <div class="tab" onclick="toast('Em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>Entregas</div>
-  <div class="tab" onclick="document.querySelector('.hist').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Histórico</div>
-  <div class="tab" onclick="document.getElementById('walletCard').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M16 14h2"/></svg>Carteira</div>
-  <div class="tab" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>Perfil</div>
+  <div class="tab on" data-v="painel" onclick="go('painel')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Painel</div>
+  <div class="tab" data-v="entregas" onclick="go('entregas')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>Entregas</div>
+  <div class="tab" data-v="historico" onclick="go('historico')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Histórico</div>
+  <div class="tab" data-v="carteira" onclick="go('carteira')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M16 14h2"/></svg>Carteira</div>
+  <div class="tab" data-v="perfil" onclick="go('perfil')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>Perfil</div>
 </div>
 
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
@@ -179,6 +236,7 @@ const api={
   drivers:()=>j(API+'/api/drivers'),
   queue:()=>j(API+'/api/drivers/queue'),
   driver:(id)=>j(API+'/api/drivers/'+id),
+  patchDriver:(id,b)=>j(API+'/api/drivers/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
   setStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
   route:(id)=>j(API+'/api/drivers/'+id+'/route'),
   history:(id)=>j(API+'/api/drivers/'+id+'/history'),
@@ -190,11 +248,18 @@ const api={
 };
 const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
 const hhmm=(iso)=>{if(!iso)return '';const d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+function isToday(iso){ if(!iso)return false; const d=new Date(iso),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
 function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');}catch(e){}location.href='index.html';}
 
-let driver=null, route=null, fee=5;
-function isToday(iso){ if(!iso)return false; const d=new Date(iso), n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
+let driver=null, route=null, fee=5, lastHistory=[], view='painel';
+
+function go(v){
+  view=v;
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('on',el.id==='view-'+v));
+  document.querySelectorAll('.tabbar .tab').forEach(el=>el.classList.toggle('on',el.getAttribute('data-v')===v));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 async function resolveDriver(){
   let email=''; try{email=sessionStorage.getItem('audens_email')||'';}catch(e){}
@@ -202,12 +267,18 @@ async function resolveDriver(){
   try{const ds=await api.drivers(); if(ds&&ds.length) return ds[0];}catch(e){}
   return null;
 }
+function avatarHTML(d,imgOnly){
+  if(d&&d.photoUrl) return `<img src="${d.photoUrl}">`;
+  return imgOnly?'':((d&&d.name||'M').trim().charAt(0).toUpperCase());
+}
 function renderStatus(){
   const on=!!(driver&&driver.online);
   document.getElementById('toggle').classList.toggle('on',on);
   document.getElementById('statusTxt').innerHTML='Você está '+(on?'<span class="onl">online</span>':'<span class="off">offline</span>');
   document.getElementById('avOn').style.display=on?'block':'none';
-  if(driver)document.getElementById('avInit').textContent=(driver.name||'M').trim().charAt(0).toUpperCase();
+  const av=document.getElementById('av'), init=document.getElementById('avInit');
+  if(driver&&driver.photoUrl){ init.style.display='none'; if(!av.querySelector('img')){const im=document.createElement('img');im.src=driver.photoUrl;av.insertBefore(im,av.firstChild);} else av.querySelector('img').src=driver.photoUrl; }
+  else if(driver){ init.style.display=''; init.textContent=(driver.name||'M').trim().charAt(0).toUpperCase(); const im=av.querySelector('img'); if(im)im.remove(); }
 }
 async function toggleOnline(){
   if(!driver){toast('Motoboy não identificado');return;}
@@ -238,7 +309,7 @@ function mainActsHTML(st){
 }
 function renderRoute(){
   const area=document.getElementById('routeArea'), wait=document.getElementById('waitCard');
-  if(!route){ area.style.display='none'; wait.style.display='flex'; return; }
+  if(!route){ area.style.display='none'; wait.style.display='flex'; renderEntregas(); return; }
   area.style.display='block'; wait.style.display='none';
   const ods=route.orderDetails||[]; const n=ods.length;
   const badge=document.getElementById('rBadge');
@@ -255,6 +326,15 @@ function renderRoute(){
   document.getElementById('sFee').textContent=money(n*fee);
   document.getElementById('sRate').textContent=(driver&&driver.acceptanceRate!=null)?driver.acceptanceRate+'%':'100%';
   document.getElementById('mainActs').innerHTML=mainActsHTML(route.status);
+  renderEntregas();
+}
+function renderEntregas(){
+  const box=document.getElementById('entregasCard');
+  if(!route){ box.innerHTML='<div class="empty">Nenhuma entrega ativa.<br>Fique online para receber rotas.</div>'; return; }
+  const ods=route.orderDetails||[]; const n=ods.length;
+  box.innerHTML=`<div class="sec-h"><b>Rota atual · ${n} ${n===1?'parada':'paradas'}</b></div>`+ods.map((o,i)=>stopHTML(o,i,n,route.status)).join('')
+    +`<div style="margin-top:12px" class="acts">${mainActsHTML(route.status)}</div>
+      <button class="mini" style="margin-top:4px;flex-direction:row;justify-content:center;padding:11px" onclick="openMaps()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg> Abrir rota no Maps</button>`;
 }
 async function accept(){ if(!route)return; try{await api.accept(route.id);toast('Rota aceita!');load();}catch(e){toast('Erro: '+e.message);} }
 async function startRoute(){ if(!route)return; try{await api.start(route.id);toast('Boa entrega!');load();}catch(e){toast('Erro: '+e.message);} }
@@ -268,25 +348,58 @@ function openMaps(){
   window.open('https://www.google.com/maps/dir/?api=1&destination='+dest+(way?'&waypoints='+way:''),'_blank');
 }
 function ligarLoja(){ toast('Telefone da loja em breve'); }
-function renderHistory(list){
-  const box=document.getElementById('history');
-  if(!list||!list.length){ box.innerHTML='<div class="empty">Nenhuma entrega hoje ainda.</div>'; return; }
-  box.innerHTML=list.map(o=>{
-    const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
-    const addr=[(o.address&&o.address.street)||'',(o.address&&o.address.number)||''].filter(Boolean).join(', ');
-    return `<div class="row"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-11"/></svg></div>
-      <div><div class="oid">#${o.displayId||o.externalOrderId||''} <span style="color:var(--dim);font-weight:600">${bairro}</span></div><div class="ad">${addr||'—'}</div></div>
-      <div class="rgt"><div class="st">Entregue</div><div class="tm">${hhmm(o.deliveredAt||o.updatedAt)}</div><div class="vl">${money(o.total)}</div></div></div>`;
-  }).join('');
+
+function histRow(o){
+  const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
+  const addr=[(o.address&&o.address.street)||'',(o.address&&o.address.number)||''].filter(Boolean).join(', ');
+  return `<div class="row"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-11"/></svg></div>
+    <div><div class="oid">#${o.displayId||o.externalOrderId||''} <span style="color:var(--dim);font-weight:600">${bairro}</span></div><div class="ad">${addr||'—'}</div></div>
+    <div class="rgt"><div class="st">Entregue</div><div class="tm">${hhmm(o.deliveredAt||o.updatedAt)}</div><div class="vl">${money(o.total)}</div></div></div>`;
 }
-function renderWallet(history){
-  const hoje=(history||[]).filter(o=>isToday(o.deliveredAt||o.updatedAt));
+function renderHistory(list){
+  lastHistory=list||[];
+  const full=document.getElementById('historyFull');
+  if(!lastHistory.length){ full.innerHTML='<div class="empty">Nenhuma entrega ainda.</div>'; }
+  else full.innerHTML=lastHistory.map(histRow).join('');
+}
+function renderWallet(){
+  const hoje=lastHistory.filter(o=>isToday(o.deliveredAt||o.updatedAt));
   const count=hoje.length, total=count*fee;
   document.getElementById('wCount').textContent=count;
   document.getElementById('wFee').textContent=money(fee);
   document.getElementById('wTotal').textContent=money(total);
   document.getElementById('wEarn').textContent=money(total);
+  // carteira
+  document.getElementById('cTotal').textContent=money(total);
+  document.getElementById('cCount').textContent=count;
+  document.getElementById('cFee').textContent=money(fee);
+  const cl=document.getElementById('carteiraList');
+  cl.innerHTML=hoje.length?hoje.map(o=>{
+    const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
+    return `<div class="row"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-11"/></svg></div>
+      <div><div class="oid">#${o.displayId||o.externalOrderId||''} <span style="color:var(--dim);font-weight:600">${bairro}</span></div><div class="ad">${hhmm(o.deliveredAt||o.updatedAt)}</div></div>
+      <div class="rgt"><div class="vl" style="color:var(--green)">+ ${money(fee)}</div></div></div>`;
+  }).join(''):'<div class="empty">Nenhuma entrega hoje.</div>';
 }
+function renderPerfil(){
+  if(!driver)return;
+  document.getElementById('profName').textContent=driver.name||'—';
+  document.getElementById('profEmail').textContent=driver.email||'—';
+  document.getElementById('profPhone').textContent=driver.phone||'—';
+  const hoje=lastHistory.filter(o=>isToday(o.deliveredAt||o.updatedAt)).length;
+  document.getElementById('profDeliv').textContent=hoje;
+  const pav=document.getElementById('profAv'), pin=document.getElementById('profInit');
+  if(driver.photoUrl){ pin.style.display='none'; let im=pav.querySelector('img'); if(!im){im=document.createElement('img');pav.insertBefore(im,pav.firstChild);} im.src=driver.photoUrl; }
+  else { pin.style.display=''; pin.textContent=(driver.name||'M').trim().charAt(0).toUpperCase(); const im=pav.querySelector('img'); if(im)im.remove(); }
+}
+// upload de foto
+function fileToDataUrl(file,size=220){return new Promise((res,rej)=>{const img=new Image();const u=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=size;c.height=size;const x=c.getContext('2d');const sc=Math.max(size/img.width,size/img.height);const w=img.width*sc,h=img.height*sc;x.drawImage(img,(size-w)/2,(size-h)/2,w,h);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.85));};img.onerror=rej;img.src=u;});}
+document.getElementById('photoInput').addEventListener('change',async(e)=>{
+  const file=e.target.files[0]; if(!file||!driver)return;
+  try{ toast('Enviando foto…'); const d=await fileToDataUrl(file); driver=await api.patchDriver(driver.id,{photoUrl:d}); renderStatus(); renderPerfil(); toast('Foto atualizada'); }
+  catch(err){ toast('Erro ao enviar foto'); }
+});
+
 async function load(){
   if(!API){document.getElementById('conn').textContent='Configure a API (config.js).';return;}
   if(!driver){ driver=await resolveDriver(); if(!driver){document.getElementById('conn').textContent='Nenhum motoboy vinculado a este acesso. Cadastre em Usuários.';return;} }
@@ -295,7 +408,7 @@ async function load(){
     const [q,r,h,cfg]=await Promise.all([api.queue().catch(()=>[]),api.route(driver.id).catch(()=>null),api.history(driver.id).catch(()=>[]),api.settings().catch(()=>({}))]);
     fee=Number(cfg&&cfg.deliveryFeePerOrder)||5;
     document.getElementById('queueN').textContent=(q&&q.length)||0;
-    route=r; renderRoute(); renderWallet(h); renderHistory(h);
+    route=r; renderRoute(); renderHistory(h); renderWallet(); renderPerfil();
     document.getElementById('conn').textContent='Atualizado '+hhmm(new Date().toISOString());
   }catch(e){ document.getElementById('conn').textContent='Sem conexão com o servidor.'; }
 }
