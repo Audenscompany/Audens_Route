@@ -62,7 +62,7 @@ function cardHTML(o){
   const bairro=(o.address&&o.address.neighborhood)||'—';
   const nx=NEXT[o.status];
   const act=nx?`<button class="act" style="background:${nx[2]}" onclick="advance('${o.id}','${nx[0]}')">${nx[1]}</button>`:'';
-  return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">#${o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
+  return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
     <div class="bairro">${bairro}</div>
     <div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div>${act}</div>`;
 }
