@@ -324,8 +324,9 @@ function renderGeo(){
   else { el.innerHTML=`<span style="color:var(--dim)">A ${geoState.distanceMeters} m da loja · aproxime-se para entrar na fila</span>`; }
 }
 function stopHTML(o,i,total,status){
-  const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
-  const addr=[(o.address&&o.address.street)||'',(o.address&&o.address.number)||''].filter(Boolean).join(', ')||'—';
+  const A=o.address||{};
+  const bairro=A.neighborhood||A.city||o.storeName||'Entrega';
+  const addr=[[A.street,A.number].filter(Boolean).join(', '),A.complement,A.reference?('ref: '+A.reference):''].filter(Boolean).join(' · ')||'—';
   const eta='ETA '+((i+1)*8+2)+' min';
   const delivered=o.status==='delivered';
   const canDeliver=status==='in_progress'&&!delivered;
