@@ -151,8 +151,12 @@
       const cred = await authMod.signInWithEmailAndPassword(auth, email, password);
       // papel virá do custom claim (role) — carregado no token
       const token = await cred.user.getIdTokenResult();
-      const role = (token.claims && token.claims.role) || 'operator';
+      let role = (token.claims && token.claims.role) || '';
+      // se o papel não veio no token, consulta o backend pelo e-mail
+      if (!role && CFG.apiUrl){ try{ const w = await (await fetch(CFG.apiUrl+'/api/whoami?email='+encodeURIComponent(email))).json(); role = (w && w.role) || 'operator'; }catch(_){ role='operator'; } }
+      if (!role) role='operator';
       sessionStorageSafe('audens_role', role);
+      sessionStorageSafe('audens_email', email);
       location.href = pageForRole(role);
     }catch(ex){
       err.textContent = 'Não foi possível entrar. Verifique e-mail e senha.';

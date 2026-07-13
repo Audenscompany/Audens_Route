@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Usuários</title>
+<style>
+  .addcard{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+  .u-item{display:flex;align-items:center;gap:13px;margin-bottom:12px;}
+  .u-av{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;flex-shrink:0;}
+  .u-item b{font-size:14px;} .u-item .em{font-size:12px;color:var(--dim);}
+  .u-item .right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .rolepill{font-size:11px;font-weight:700;border-radius:999px;padding:4px 11px;}
+  .rp-admin{background:rgba(139,92,246,.16);color:var(--violet-3);} .rp-operator{background:rgba(96,165,250,.16);color:#60a5fa;} .rp-kitchen{background:rgba(245,181,68,.16);color:var(--amber);} .rp-driver{background:rgba(52,211,153,.16);color:var(--green);}
+  .u-item select{background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 9px;font-size:12px;}
+  .del{border:none;background:none;color:var(--faint);cursor:pointer;font-size:12.5px;} .del:hover{color:var(--red);}
+  .hint{font-size:12px;color:var(--faint);margin-top:6px;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head"><h1>Usuários & Acessos</h1><p>Crie o login de cada pessoa e defina o acesso. Motoboy criado aqui já entra direto na tela dele.</p></div>
+  <div class="card-b">
+    <div class="addcard">
+      <div class="field" style="flex:1;min-width:150px"><label>Nome</label><input id="nName" placeholder="Ex.: João Silva" /></div>
+      <div class="field" style="flex:1;min-width:180px"><label>E-mail (login)</label><input id="nEmail" type="email" placeholder="joao@email.com" /></div>
+      <div class="field" style="min-width:130px"><label>Senha inicial</label><input id="nPass" type="text" placeholder="mín. 6 caracteres" /></div>
+      <div class="field"><label>Acesso</label><select id="nRole"><option value="driver">Motoboy</option><option value="operator">Operador</option><option value="kitchen">Cozinha</option><option value="admin">Admin</option></select></div>
+      <div class="field"><label>Telefone (opcional)</label><input id="nPhone" placeholder="(31) 9…" /></div>
+      <button class="btn primary" id="addBtn">+ Criar login</button>
+    </div>
+    <div class="hint">A senha inicial você entrega pra pessoa; ela pode trocar depois. O e-mail é o login.</div>
+  </div>
+  <div id="list" style="margin-top:16px"></div>
+</template>
+
+<script>window.PAGE='usuarios';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+let users=[];
+const ROLE_LABEL={admin:'Admin',operator:'Operador',kitchen:'Cozinha',driver:'Motoboy'};
+async function load(){
+  if(!api.hasBackend){setConn('err');return;}
+  try{ users=await api.users(); setConn('live'); render(); }catch(e){ setConn('err'); }
+}
+function render(){
+  const box=document.getElementById('list');
+  if(!users.length){ box.innerHTML=`<div class="card-b" style="text-align:center;color:var(--faint)">Nenhum usuário criado ainda. Crie o primeiro login acima.</div>`; return; }
+  box.innerHTML=`<div class="card-b">`+users.map(u=>`
+    <div class="u-item">
+      <div class="u-av">${(u.name||'?').trim().charAt(0).toUpperCase()}</div>
+      <div><b>${u.name||''}</b><div class="em">${u.email||''}</div></div>
+      <div class="right">
+        <span class="rolepill rp-${u.role}">${ROLE_LABEL[u.role]||u.role}</span>
+        <select onchange="changeRole('${u.uid}',this.value)">
+          ${Object.keys(ROLE_LABEL).map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_LABEL[r]}</option>`).join('')}
+        </select>
+        <button class="del" onclick="removeUser('${u.uid}','${(u.name||'').replace(/'/g,'')}')">remover</button>
+      </div>
+    </div>`).join('')+`</div>`;
+}
+async function addUser(){
+  const name=document.getElementById('nName').value.trim();
+  const email=document.getElementById('nEmail').value.trim();
+  const password=document.getElementById('nPass').value;
+  const role=document.getElementById('nRole').value;
+  const phone=document.getElementById('nPhone').value.trim();
+  if(!name||!email){toast('Preencha nome e e-mail');return;}
+  if(password.length<6){toast('A senha precisa ter ao menos 6 caracteres');return;}
+  try{
+    await api.createUser({name,email,password,role,phone});
+    document.getElementById('nName').value='';document.getElementById('nEmail').value='';document.getElementById('nPass').value='';document.getElementById('nPhone').value='';
+    toast('Login criado!'); load();
+  }catch(e){ toast('Erro: '+e.message); }
+}
+async function changeRole(uid,role){ try{ await api.setUserRole(uid,role); toast('Acesso atualizado'); load(); }catch(e){ toast('Erro: '+e.message); } }
+async function removeUser(uid,name){ if(!confirm(`Remover o login de "${name}"?`))return; try{ await api.delUser(uid); toast('Removido'); load(); }catch(e){ toast('Erro: '+e.message); } }
+document.getElementById('addBtn').onclick=addUser;
+load();
+</script>
+</body>
+</html>

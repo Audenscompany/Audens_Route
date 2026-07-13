@@ -52,6 +52,7 @@
       <div class="selbar">
         <div class="info"><b id="selN">0</b> selecionado(s)</div>
         <div class="rule">mín. <b id="minR">2</b> · máx. <b id="maxR">3</b> por rota</div>
+        <div class="rule" id="spread"></div>
         <div class="sp"></div>
         <button class="btn exc" id="forceBtn" style="display:none" onclick="createRoute(true)">Forçar 1 (exceção)</button>
         <button class="btn primary dis" id="makeBtn" onclick="createRoute(false)">Criar rota</button>
@@ -75,10 +76,13 @@
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script src="app.js"></script>
 <script>
-const {IC,api,H,setConn,toast}=AudensShell;
-let stores=[],storeMap={},pool=[],routes=[],suggestions=[],selected=new Set(),min=2,max=3;
+const {IC,api,H,setConn,toast,API}=AudensShell;
+let stores=[],storeMap={},pool=[],routes=[],suggestions=[],selected=new Set(),min=2,max=3,raioKm=2,drivers=[];
 
 function check(){return `<span class="chk">${IC.check}</span>`;}
+function coord(o){return o&&o.address&&o.address.lat!=null&&o.address.lng!=null?o.address:null;}
+function hav(a,b){if(!a||!b)return null;const R=6371,r=d=>d*Math.PI/180;const dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng);const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+function selectedSpread(){const os=[...selected].map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);let mx=0,any=false;for(let i=0;i<os.length;i++)for(let j=i+1;j<os.length;j++){const d=hav(coord(os[i]),coord(os[j]));if(d!=null){any=true;if(d>mx)mx=d;}}return any?mx:null;}
 
 function renderStats(){
   document.getElementById('stats').innerHTML=`
@@ -92,10 +96,11 @@ function renderPool(){
   box.innerHTML=`<div class="gwrap">`+pool.map(o=>{
     const on=selected.has(o.id);
     const bairro=(o.address&&o.address.neighborhood)||'—';
+    const geo=coord(o)?'':' <span style="color:var(--faint);font-size:10px">· sem localização</span>';
     return `<div class="gc ${on?'on':''}" onclick="toggle('${o.id}')">
       ${check()}
       <div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
-      <div class="bairro">${bairro}</div>
+      <div class="bairro">${bairro}${geo}</div>
       <div class="r2"><span class="tm">${H.rel(o.readyAt||o.groupingStartedAt||o.createdAt)} pronto</span><span class="val">${H.money(o.total)}</span></div>
     </div>`;
   }).join('')+`</div>`;
@@ -107,6 +112,9 @@ function renderSelbar(){
   const ok = n>=min && n<=max;
   make.classList.toggle('dis',!ok);
   force.style.display = (n===1)?'inline-flex':'none';
+  const sp=document.getElementById('spread'), d=selectedSpread();
+  if(n<2||d==null){ sp.innerHTML=''; }
+  else{ const cor=d>raioKm?'var(--amber)':'var(--green)'; sp.innerHTML=`dispersão: <b style="color:${cor}">${d.toFixed(1)} km</b>${d>raioKm?' (acima do raio)':''}`; }
 }
 function toggle(id){
   if(selected.has(id))selected.delete(id);
@@ -127,12 +135,22 @@ function renderSuggestions(){
 function renderRoutes(){
   const box=document.getElementById('routes');
   if(!routes.length){ box.innerHTML=`<div class="panel-empty">Nenhuma rota montada ainda<small>crie uma selecionando pedidos ao lado</small></div>`; return; }
-  box.innerHTML=routes.map(r=>`
-    <div class="rt">
+  const stMap={sent_to_driver:'enviada ao motoboy',accepted_by_driver:'aceita',in_progress:'em entrega'};
+  box.innerHTML=routes.map(r=>{
+    const despachada=!!r.driverId;
+    const opts=drivers.map(d=>`<option value="${d.id}">${d.name}${d.online?'':' (offline)'}</option>`).join('');
+    const foot = despachada
+      ? `<span class="v">${H.money(r.totalValue)}</span><span style="font-size:11px;color:var(--green)">🛵 ${r.driverName||''} · ${stMap[r.status]||r.status}</span>`
+      : `<span class="v">${H.money(r.totalValue)}</span>
+         <select id="dv-${r.id}" class="copy" style="padding:6px 8px;font-weight:600">${drivers.length?opts:'<option>sem motoboys</option>'}</select>
+         <button class="mini g" onclick="dispatch('${r.id}')">Despachar</button>
+         <button class="mini d" onclick="undoRoute('${r.id}')">desfazer</button>`;
+    return `<div class="rt">
       <div class="h"><b>${(r.neighborhoods||[]).join(', ')||'Rota'}</b><span class="badge ${r.isException?'exc':'ok'}">${r.isException?'exceção · 1 pedido':(r.orderCount+' pedidos')}</span></div>
       <div class="ol">${(r.orders||[]).map(id=>{const o=orderById(id);return `<span class="pill">#${o?(o.displayId||o.externalOrderId):id.slice(-5)}</span>`;}).join('')}</div>
-      <div class="foot"><span class="v">${H.money(r.totalValue)}</span><span style="font-size:11px;color:var(--faint)">${(r.stores||[]).join(' · ')}</span><button class="mini d" onclick="undoRoute('${r.id}')">desfazer</button></div>
-    </div>`).join('');
+      <div class="foot">${foot}</div>
+    </div>`;
+  }).join('');
 }
 function orderById(id){ return allOrders.find(o=>o.id===id); }
 let allOrders=[];
@@ -155,6 +173,11 @@ async function undoRoute(id){
   if(!confirm('Desfazer esta rota? Os pedidos voltam para "aguardando agrupamento".'))return;
   try{ await api.delRoute(id); toast('Rota desfeita'); await load(); }catch(e){ toast('Erro: '+e.message); }
 }
+async function dispatch(id){
+  const sel=document.getElementById('dv-'+id); const driverId=sel&&sel.value;
+  if(!driverId||driverId==='sem motoboys'){toast('Cadastre um motoboy em Usuários');return;}
+  try{ await api.assignRoute(id,driverId); toast('Rota despachada ao motoboy!'); await load(); }catch(e){ toast('Erro: '+e.message); }
+}
 
 async function loadSuggestions(){
   try{ suggestions=await api.routeSuggestions(); }catch(e){ suggestions=[]; }
@@ -163,7 +186,8 @@ async function loadSuggestions(){
 async function load(){
   if(!api.hasBackend){ setConn('err'); return; }
   try{
-    const [so,or_,rt]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.routes().catch(()=>[])]);
+    const [so,or_,rt,cfg,dr]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.routes().catch(()=>[]),fetch(API+'/api/settings').then(r=>r.json()).catch(()=>({})),api.drivers().catch(()=>[])]);
+    raioKm=Number(cfg&&cfg.maxDistanceBetweenGroupedOrdersKm)||2; drivers=Array.isArray(dr)?dr:[];
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
     allOrders=Array.isArray(or_)?or_:[];
     pool=allOrders.filter(o=>o.status==='waiting_grouping' && !o.assignedRouteId);

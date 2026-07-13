@@ -2,239 +2,276 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#0f1115" />
-<link rel="manifest" href="manifest.json" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a0713" />
 <title>Audens Route — Motoboy</title>
 <style>
   :root{
-    --bg:#0f1115; --surface:#171a21; --surface-2:#1e222b; --border:#2a2f3a;
-    --text:#e7ebf0; --text-dim:#9aa4b2; --text-faint:#6b7484;
-    --accent:#4f8cff; --purple:#9b7dff; --green:#34c77b; --amber:#f5a524; --red:#f2545b;
+    --bg:#0a0713; --card:#140f22; --card2:#1a1330; --line:#271d40; --line2:#33264f;
+    --text:#eee9f7; --dim:#a89ec6; --faint:#6f6690;
+    --violet:#a855f7; --violet2:#7c3aed; --violet3:#c084fc; --green:#34d399; --amber:#f5b544; --red:#f2545b; --cyan:#22d3ee;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
-  *{box-sizing:border-box;}
-  html,body{max-width:100%; overflow-x:hidden;}
-  body{margin:0; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;}
-  .app{width:100%; max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
-
-  header{
-    position:sticky; top:0; z-index:10; padding:14px 16px;
-    background:rgba(15,17,21,.94); backdrop-filter:blur(8px); border-bottom:1px solid var(--border);
-    display:flex; align-items:center; gap:12px;
-  }
-  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--purple));
-    display:grid;place-items:center;font-weight:800;color:#fff;}
-  header .who{flex:1;}
-  header .who b{font-size:14px;}
-  header .who span{display:block; font-size:12px; color:var(--text-dim);}
-  .toggle{
-    display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
-    background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:6px 12px; font-size:12.5px; font-weight:700;
-  }
-  .toggle .sw{width:34px;height:20px;border-radius:999px;background:#3a3f4b;position:relative;transition:background .2s;}
-  .toggle .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s;}
-  .toggle.on .sw{background:var(--green);}
-  .toggle.on .sw::after{left:16px;}
-
-  .content{flex:1; padding:16px; display:flex; flex-direction:column; gap:14px;}
-
-  .status-card{
-    background:linear-gradient(135deg,var(--surface),var(--surface-2));
-    border:1px solid var(--border); border-radius:14px; padding:16px;
-  }
-  .status-card .lbl{font-size:12px; color:var(--text-dim);}
-  .status-card .val{font-size:20px; font-weight:750; margin-top:3px; display:flex; align-items:center; gap:9px;}
-  .status-card .val .d{width:11px;height:11px;border-radius:50%;background:var(--text-faint);}
-  .status-card.online .val .d{background:var(--green);}
-  .status-card .meta{display:flex; gap:18px; margin-top:12px;}
-  .status-card .meta div{font-size:12px; color:var(--text-dim);}
-  .status-card .meta b{display:block; color:var(--text); font-size:16px; font-weight:700;}
-
-  .section-title{font-size:12.5px; color:var(--text-dim); font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin:4px 2px 0;}
-
-  .route{background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
-  .route-head{padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px;}
-  .route-head b{font-size:15px;}
-  .route-head .chip{margin-left:auto; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; background:rgba(155,125,255,.16); color:var(--purple);}
-  .stops{padding:6px 0;}
-  .stop{display:flex; gap:12px; padding:12px 16px; align-items:flex-start;}
-  .stop:not(:last-child){border-bottom:1px solid var(--border);}
-  .stop .seq{width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);
-    display:grid;place-items:center;font-size:13px;font-weight:750;flex-shrink:0;}
-  .stop.done .seq{background:var(--green);border-color:var(--green);color:#0f1115;}
-  .stop .info{flex:1;}
-  .stop .info b{font-size:14px;}
-  .stop .info .addr{font-size:12.5px; color:var(--text-dim); margin-top:2px;}
-  .stop .info .eta{font-size:11.5px; color:var(--text-faint); margin-top:3px;}
-  .stop .mini{border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); border-radius:8px;
-    padding:6px 8px; font-size:11.5px; cursor:pointer; text-decoration:none; white-space:nowrap;}
-
-  .actions{display:flex; flex-direction:column; gap:10px; margin-top:2px;}
-  .big{
-    width:100%; border:none; border-radius:12px; padding:15px; font-size:15px; font-weight:750; cursor:pointer;
-    color:#fff; background:var(--accent); transition:filter .15s;
-  }
-  .big:hover{filter:brightness(1.08);}
-  .big.green{background:var(--green); color:#0f1115;}
-  .big.amber{background:var(--amber); color:#0f1115;}
-  .big.ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--border);}
-  .big:disabled{opacity:.4; cursor:default;}
-  .idle{color:var(--text-faint); text-align:center; padding:30px 10px; font-size:13.5px;}
-
-  .toast{position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    background:var(--surface-2); border:1px solid var(--border); color:var(--text);
-    padding:11px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:opacity .2s; z-index:60;}
-  .toast.show{opacity:1;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:radial-gradient(700px 320px at 50% -8%,rgba(139,92,246,.16),transparent 60%),var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:480px;margin:0 auto;min-height:100vh;padding:14px 14px 96px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;}
+  .top{display:flex;align-items:center;gap:12px;padding:6px 2px 12px;}
+  .burger{width:26px;height:26px;color:var(--dim);}
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand .mk{width:34px;height:32px;flex-shrink:0;}
+  .brand .tx{font-weight:800;letter-spacing:.14em;font-size:15px;line-height:1;} .brand .tx small{display:block;font-size:8.5px;letter-spacing:.32em;color:var(--violet3);font-weight:700;margin-top:2px;}
+  .top .sp{margin-left:auto;}
+  .bell{position:relative;color:var(--dim);width:24px;height:24px;} .bell .b{position:absolute;top:-5px;right:-5px;background:var(--violet);color:#fff;font-size:9px;font-weight:800;border-radius:999px;min-width:15px;height:15px;display:grid;place-items:center;padding:0 3px;}
+  .av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#5b3fa8,#a855f7);display:grid;place-items:center;font-weight:800;position:relative;font-size:15px;}
+  .av .on{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--bg);}
+  .statusrow{display:flex;align-items:center;}
+  .statusrow .l .k{font-size:12px;color:var(--dim);} .statusrow .l .v{font-size:15px;font-weight:700;margin-top:2px;} .statusrow .l .v .off{color:var(--red);} .statusrow .l .v .onl{color:var(--green);}
+  .toggle{margin-left:auto;display:flex;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px;gap:2px;cursor:pointer;user-select:none;}
+  .toggle .opt{padding:8px 16px;border-radius:999px;font-size:13px;font-weight:700;color:var(--faint);display:flex;align-items:center;gap:8px;transition:.15s;}
+  .toggle .opt .dot{width:14px;height:14px;border-radius:50%;background:#463a63;transition:.15s;}
+  .toggle.on .opt.online{background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;box-shadow:0 6px 16px rgba(139,92,246,.4);} .toggle.on .opt.online .dot{background:#fff;}
+  .toggle:not(.on) .opt.offline{background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;} .toggle:not(.on) .opt.offline .dot{background:#fff;}
+  .store-card{display:flex;flex-direction:column;gap:14px;}
+  .store-head{display:flex;align-items:flex-start;gap:14px;}
+  .store-ic{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#3a2a63,#7c3aed);display:grid;place-items:center;flex-shrink:0;color:#fff;}
+  .store-ic svg{width:32px;height:32px;}
+  .store-txt .tag{font-size:11px;color:var(--violet3);font-weight:700;} .store-txt h2{font-size:19px;margin:2px 0 4px;} .store-txt p{font-size:13px;color:var(--dim);margin:0;line-height:1.45;}
+  .store-ill{margin-left:auto;width:96px;height:64px;flex-shrink:0;opacity:.9;}
+  .queue-bar{display:flex;align-items:center;gap:9px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;}
+  .queue-bar .n{font-size:13px;color:var(--dim);} .queue-bar .n b{color:var(--text);}
+  .queue-bar a{margin-left:auto;color:var(--violet3);font-size:13px;font-weight:700;text-decoration:none;}
+  .sec-h{display:flex;align-items:center;margin:2px 2px 12px;} .sec-h b{font-size:16px;} .sec-h .badge{margin-left:auto;font-size:12px;font-weight:700;border-radius:999px;padding:6px 13px;}
+  .badge.wait{background:rgba(245,181,68,.14);color:var(--amber);} .badge.acc{background:rgba(52,211,153,.14);color:var(--green);} .badge.prog{background:rgba(34,211,238,.14);color:var(--cyan);}
+  .rstats{display:flex;gap:10px;margin-bottom:6px;}
+  .rstat{flex:1;display:flex;align-items:center;gap:10px;} .rstat .ic{width:34px;height:34px;border-radius:10px;background:var(--card2);display:grid;place-items:center;color:var(--violet3);flex-shrink:0;} .rstat .ic svg{width:18px;height:18px;}
+  .rstat .n{font-size:16px;font-weight:800;line-height:1.1;} .rstat .l{font-size:10.5px;color:var(--faint);}
+  .divide{height:1px;background:var(--line);margin:14px 0;}
+  .stop{display:flex;align-items:flex-start;gap:13px;padding:9px 0;}
+  .stop .marker{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+  .stop .num{width:30px;height:30px;border-radius:50%;background:var(--card2);border:2px solid var(--violet2);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;position:relative;}
+  .stop .num .cnt{position:absolute;top:-6px;right:-8px;background:var(--violet);color:#fff;font-size:9px;font-weight:800;border-radius:999px;min-width:16px;height:16px;display:grid;place-items:center;}
+  .stop .line{width:2px;flex:1;min-height:22px;background:repeating-linear-gradient(var(--violet2) 0 4px,transparent 4px 8px);margin:3px 0;}
+  .stop .info{flex:1;min-width:0;} .stop .oid{font-size:11.5px;color:var(--faint);font-weight:700;} .stop .bairro{font-size:14.5px;font-weight:700;margin:1px 0 2px;} .stop .addr{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stop .rgt{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+  .stop .eta{font-size:11.5px;font-weight:700;color:var(--violet3);border:1px solid var(--line2);border-radius:999px;padding:4px 10px;}
+  .stop .prio{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:5px;} .stop .prio .d{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+  .stop.done .num{background:var(--green);border-color:var(--green);}
+  .rsum{display:flex;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:6px;}
+  .rsum .c{flex:1;display:flex;align-items:center;gap:9px;} .rsum .ic{color:var(--violet3);} .rsum .ic svg{width:19px;height:19px;} .rsum .n{font-size:14.5px;font-weight:800;line-height:1.1;} .rsum .l{font-size:10px;color:var(--faint);}
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:14px 0 11px;}
+  .big{border:1px solid var(--line2);background:var(--card);border-radius:14px;padding:15px;display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--text);text-align:left;}
+  .big .ic{width:26px;height:26px;flex-shrink:0;display:grid;place-items:center;} .big .t{font-size:14px;font-weight:800;} .big .s{font-size:11px;color:var(--dim);}
+  .big.primary{background:linear-gradient(120deg,#7c3aed,#a855f7);border:none;box-shadow:0 10px 26px rgba(139,92,246,.4);} .big.primary .s{color:rgba(255,255,255,.82);}
+  .big.full{grid-column:1/-1;}
+  .acts2{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:9px;}
+  .mini{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;color:var(--dim);font-size:10.5px;font-weight:600;text-align:center;}
+  .mini svg{width:19px;height:19px;} .mini:active{border-color:var(--violet);color:var(--text);}
+  .hist .row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line);} .hist .row:last-child{border-bottom:none;}
+  .hist .chk{width:26px;height:26px;border-radius:50%;background:rgba(52,211,153,.16);color:var(--green);display:grid;place-items:center;flex-shrink:0;} .hist .chk svg{width:15px;height:15px;}
+  .hist .oid{font-size:12.5px;font-weight:800;} .hist .ad{font-size:11.5px;color:var(--dim);}
+  .hist .rgt{margin-left:auto;text-align:right;} .hist .st{font-size:11.5px;color:var(--green);font-weight:700;} .hist .tm{font-size:10.5px;color:var(--faint);} .hist .vl{font-size:12.5px;font-weight:800;color:var(--violet3);}
+  .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:rgba(14,10,26,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
+  .tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:10.5px;font-weight:600;cursor:pointer;padding:6px 0;} .tabbar .tab svg{width:22px;height:22px;} .tabbar .tab.on{color:var(--violet3);}
+  .empty{color:var(--faint);font-size:13px;text-align:center;padding:22px 8px;}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:80;max-width:88%;text-align:center;} .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+  .conn{font-size:11px;color:var(--faint);text-align:center;padding:4px;}
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="logo">A</div>
-    <div class="who">
-      <b id="driverName">João</b>
-      <span id="driverSub">Motoboy · Audens Route</span>
+<div class="wrap">
+  <div class="top">
+    <svg class="burger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    <div class="brand">
+      <svg class="mk" viewBox="0 0 88 80" fill="none"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c084fc"/><stop offset="1" stop-color="#6d28d9"/></linearGradient></defs><circle cx="44" cy="38" r="30" stroke="url(#lg)" stroke-width="4"/><path d="M22 50 L37 28 L46 41 L52 32 L64 50 Z" fill="url(#lg)"/><path d="M18 54 C31 45 57 45 70 54" stroke="#d8b4fe" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+      <div class="tx">AUDENS<small>ROUTE</small></div>
     </div>
-    <div class="toggle on" id="onlineToggle" onclick="toggleOnline()">
-      <span id="onlineLabel">Online</span><span class="sw"></span>
-    </div>
-  </header>
+    <div class="sp"></div>
+    <div class="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="b" id="bellN">0</span></div>
+    <div class="av" id="av"><span id="avInit">M</span><span class="on" id="avOn" style="display:none"></span></div>
+  </div>
 
-  <div class="content">
-    <div class="status-card online" id="statusCard">
-      <div class="lbl">Status atual</div>
-      <div class="val"><span class="d"></span><span id="statusVal">Na loja · aguardando rota</span></div>
-      <div class="meta">
-        <div>Posição na fila<b id="queuePos">1º</b></div>
-        <div>Entregas hoje<b id="todayCount">4</b></div>
-        <div>Tempo online<b id="onlineTime">1h20</b></div>
+  <div class="card">
+    <div class="statusrow">
+      <div class="l"><div class="k">Status</div><div class="v" id="statusTxt">Você está <span class="off">offline</span></div></div>
+      <div class="toggle" id="toggle" onclick="toggleOnline()">
+        <div class="opt offline">Offline<span class="dot"></span></div>
+        <div class="opt online"><span class="dot"></span>Online</div>
       </div>
     </div>
-
-    <div class="section-title">Rota atribuída</div>
-    <div id="routeWrap"></div>
-
-    <div class="actions" id="actions"></div>
   </div>
+
+  <div class="card store-card" id="waitCard">
+    <div class="store-head">
+      <div class="store-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>
+      <div class="store-txt"><div class="tag">Na loja</div><h2 id="waitTitle">Aguardando rota</h2><p id="waitSub">Fique disponível para receber uma rota.</p></div>
+      <svg class="store-ill" viewBox="0 0 96 64" fill="none"><path d="M14 40l4-14h20l4 14" stroke="#8b5cf6" stroke-width="2" stroke-linejoin="round"/><rect x="16" y="40" width="24" height="16" stroke="#8b5cf6" stroke-width="2"/><path d="M40 30 C64 26 70 40 82 22" stroke="#c084fc" stroke-width="2" stroke-dasharray="3 4" fill="none"/><circle cx="83" cy="20" r="5" fill="#a855f7"/></svg>
+    </div>
+    <div class="queue-bar">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#c084fc" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/><path d="M16 5.5a2.6 2.6 0 0 1 0 5"/></svg>
+      <span class="n"><b id="queueN">0</b> motoboys disponíveis na sua região</span>
+      <a href="javascript:void(0)" onclick="toast('Fila completa em breve')">Ver fila ›</a>
+    </div>
+  </div>
+
+  <div id="routeArea" style="display:none">
+    <div class="card">
+      <div class="sec-h"><b>Rota atual</b><span class="badge wait" id="rBadge">Aguardando aceitação</span></div>
+      <div class="rstats">
+        <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 3 7.5v9L12 21l9-4.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div><div><div class="n" id="rStops">0 paradas</div><div class="l">Sequência</div></div></div>
+        <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><div><div class="n" id="rTime">— min</div><div class="l">Tempo estimado</div></div></div>
+        <div class="rstat"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H14a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8h4.4"/></svg></div><div><div class="n" id="rDist">— km</div><div class="l">Distância total</div></div></div>
+      </div>
+      <div class="divide"></div>
+      <div id="stops"></div>
+      <div class="rsum">
+        <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span><div><div class="n" id="sPed">0 pedidos</div><div class="l" id="sPedV">R$ 0,00</div></div></div>
+        <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg></span><div><div class="n" id="sFee">R$ —</div><div class="l">Valor estimado</div></div></div>
+        <div class="c"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/></svg></span><div><div class="n" id="sRate">—</div><div class="l">Taxa aceitação</div></div></div>
+      </div>
+      <div class="acts" id="mainActs"></div>
+      <div class="acts2">
+        <button class="mini" onclick="openMaps()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Abrir no Maps</button>
+        <button class="mini" onclick="recusar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>Recusar rota</button>
+        <button class="mini" onclick="toast('Chat de suporte em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/></svg>Chat suporte</button>
+        <button class="mini" onclick="ligarLoja()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>Ligar para loja</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hist">
+    <div class="sec-h"><b>Histórico do dia</b><a class="badge" style="margin-left:auto;color:var(--violet3)" href="javascript:void(0)" onclick="toast('Histórico completo em breve')">Ver todos</a></div>
+    <div id="history"><div class="empty">Nenhuma entrega hoje ainda.</div></div>
+  </div>
+  <div class="conn" id="conn"></div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="tabbar">
+  <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Painel</div>
+  <div class="tab" onclick="toast('Em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>Entregas</div>
+  <div class="tab" onclick="document.querySelector('.hist').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Histórico</div>
+  <div class="tab" onclick="toast('Carteira em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M16 14h2"/></svg>Carteira</div>
+  <div class="tab" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>Perfil</div>
+</div>
 
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script>
-  const CFG = window.AUDENS_CONFIG || {};
+const CFG=window.AUDENS_CONFIG||{}, API=CFG.apiUrl||'';
+async function j(u,o){const r=await fetch(u,o);if(!r.ok){let e={};try{e=await r.json()}catch(_){}throw new Error((e.error&&e.error.message)||('HTTP '+r.status));}return r.status===204?null:r.json();}
+const api={
+  whoami:(em)=>j(API+'/api/whoami?email='+encodeURIComponent(em)),
+  drivers:()=>j(API+'/api/drivers'),
+  queue:()=>j(API+'/api/drivers/queue'),
+  driver:(id)=>j(API+'/api/drivers/'+id),
+  setStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
+  route:(id)=>j(API+'/api/drivers/'+id+'/route'),
+  history:(id)=>j(API+'/api/drivers/'+id+'/history'),
+  accept:(id)=>j(API+'/api/routes/'+id+'/accept',{method:'POST'}),
+  start:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
+  complete:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
+  finish:(id)=>j(API+'/api/routes/'+id+'/finish',{method:'POST'}),
+};
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+const hhmm=(iso)=>{if(!iso)return '';const d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
+function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');}catch(e){}location.href='index.html';}
 
-  // ----- estado (demo) -----
-  let driver = { name:'João', status:'at_store', online:true, queuePos:'1º', today:4 };
+let driver=null, route=null;
 
-  // rota de exemplo (2 pedidos) — na Fase 3 isto vem do backend/Firebase
-  let route = {
-    id:'route_demo_001',
-    status:'suggested', // suggested -> accepted -> in_progress -> finished
-    distanceKm:4.8, etaMin:22,
-    stops:[
-      { orderId:'1035', label:'Pedido #1035', addr:'Rua Exemplo, 123 — Centro', eta:8, done:false,
-        maps:'https://www.google.com/maps/search/?api=1&query=-19.77,-43.85' },
-      { orderId:'1036', label:'Pedido #1036', addr:'Av. Central, 900 — Centro', eta:15, done:false,
-        maps:'https://www.google.com/maps/search/?api=1&query=-19.772,-43.852' },
-    ],
-  };
-
-  const STATUS_LABEL = {
-    at_store:'Na loja · aguardando rota', route_suggested:'Rota sugerida',
-    route_accepted:'Rota aceita', delivering:'Em entrega', returning:'Retornando à loja', online:'Online',
-  };
-
-  function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
-    clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
-
-  function toggleOnline(){
-    driver.online = !driver.online;
-    const el = document.getElementById('onlineToggle');
-    el.classList.toggle('on', driver.online);
-    document.getElementById('onlineLabel').textContent = driver.online ? 'Online' : 'Offline';
-    if(!driver.online){ driver.status='online'; }
-    render();
-  }
-
-  function renderRoute(){
-    const wrap = document.getElementById('routeWrap');
-    if(!route || route.status==='finished'){
-      wrap.innerHTML = `<div class="route"><div class="idle">Nenhuma rota atribuída.<br/>Aguardando o operador enviar a próxima.</div></div>`;
-      return;
-    }
-    const chip = ({suggested:'Sugerida',accepted:'Aceita',in_progress:'Em andamento'})[route.status] || route.status;
-    wrap.innerHTML = `
-      <div class="route">
-        <div class="route-head">
-          <b>Rota • ${route.stops.length} pedidos</b>
-          <span class="chip">${chip}</span>
-        </div>
-        <div class="stops">
-          ${route.stops.map((s,i)=>`
-            <div class="stop ${s.done?'done':''}">
-              <div class="seq">${s.done?'✓':i+1}</div>
-              <div class="info">
-                <b>${s.label}</b>
-                <div class="addr">${s.addr}</div>
-                <div class="eta">chegada estimada: ${s.eta} min</div>
-              </div>
-              <a class="mini" href="${s.maps}" target="_blank" rel="noopener">Maps</a>
-            </div>`).join('')}
-        </div>
-        <div class="route-head" style="border-top:1px solid var(--border);border-bottom:none;">
-          <span style="font-size:12.5px;color:var(--text-dim)">Distância ${route.distanceKm} km · ~${route.etaMin} min</span>
-        </div>
-      </div>`;
-  }
-
-  function renderActions(){
-    const box = document.getElementById('actions');
-    if(!driver.online){ box.innerHTML=''; return; }
-    let html = '';
-    if(route.status==='suggested'){
-      html = `<button class="big" onclick="acceptRoute()">Aceitar rota</button>`;
-    } else if(route.status==='accepted'){
-      html = `<button class="big amber" onclick="startRoute()">Sair para entrega</button>`;
-    } else if(route.status==='in_progress'){
-      const next = route.stops.find(s=>!s.done);
-      if(next){
-        html = `<button class="big green" onclick="completeStop('${next.orderId}')">Marquei entregue: #${next.orderId}</button>`;
-      } else {
-        html = `<button class="big" onclick="finishRoute()">Finalizar rota</button>`;
-      }
-    }
-    box.innerHTML = html;
-  }
-
-  function render(){
-    document.getElementById('driverName').textContent = driver.name;
-    document.getElementById('statusVal').textContent = STATUS_LABEL[driver.status] || driver.status;
-    document.getElementById('statusCard').classList.toggle('online', driver.online);
-    document.getElementById('queuePos').textContent = driver.queuePos;
-    document.getElementById('todayCount').textContent = driver.today;
-    renderRoute(); renderActions();
-  }
-
-  // ----- ações (demo; na Fase 3 chamam a API/Firebase) -----
-  function acceptRoute(){ route.status='accepted'; driver.status='route_accepted'; toast('Rota aceita'); render(); }
-  function startRoute(){ route.status='in_progress'; driver.status='delivering'; toast('Boa entrega!'); render(); }
-  function completeStop(id){
-    const s = route.stops.find(x=>x.orderId===id); if(s){ s.done=true; driver.today++; toast('Pedido #'+id+' entregue'); }
-    render();
-  }
-  function finishRoute(){
-    route.status='finished'; driver.status='returning'; toast('Rota finalizada — voltando à loja');
-    render();
-  }
-
-  render();
-
-  // registra o service worker (só funciona quando servido via http/https)
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+async function resolveDriver(){
+  let email=''; try{email=sessionStorage.getItem('audens_email')||'';}catch(e){}
+  if(email){ try{const w=await api.whoami(email); if(w&&w.driverId){return await api.driver(w.driverId).catch(()=>null);}}catch(e){} }
+  try{const ds=await api.drivers(); if(ds&&ds.length) return ds[0];}catch(e){}
+  return null;
+}
+function renderStatus(){
+  const on=!!(driver&&driver.online);
+  document.getElementById('toggle').classList.toggle('on',on);
+  document.getElementById('statusTxt').innerHTML='Você está '+(on?'<span class="onl">online</span>':'<span class="off">offline</span>');
+  document.getElementById('avOn').style.display=on?'block':'none';
+  if(driver)document.getElementById('avInit').textContent=(driver.name||'M').trim().charAt(0).toUpperCase();
+}
+async function toggleOnline(){
+  if(!driver){toast('Motoboy não identificado');return;}
+  try{ driver=await api.setStatus(driver.id,!driver.online); renderStatus(); toast(driver.online?'Você está online':'Você ficou offline'); load(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+function stopHTML(o,i,total,status){
+  const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
+  const addr=[(o.address&&o.address.street)||'',(o.address&&o.address.number)||''].filter(Boolean).join(', ')||'—';
+  const eta='ETA '+((i+1)*8+2)+' min';
+  const delivered=o.status==='delivered';
+  const canDeliver=status==='in_progress'&&!delivered;
+  return `<div class="stop ${delivered?'done':''}">
+    <div class="marker"><div class="num">${delivered?'✓':(i+1)}${i===0&&total>1?`<span class="cnt">${total}</span>`:''}</div>${i<total-1?'<div class="line"></div>':''}</div>
+    <div class="info"><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div><div class="addr">${addr}</div></div>
+    <div class="rgt"><span class="eta">${eta}</span>${canDeliver?`<button class="mini" style="padding:6px 11px;flex-direction:row" onclick="deliver('${o.id}')">Entregue</button>`:`<span class="prio"><span class="d"></span>Padrão</span>`}</div>
+  </div>`;
+}
+function mainActsHTML(st){
+  if(st==='sent_to_driver') return `
+    <button class="big primary" onclick="accept()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m5 12 5 5 9-11"/></svg></span><div><div class="t">Aceitar rota</div><div class="s">Iniciar esta rota agora</div></div></button>
+    <button class="big" onclick="recusar()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg></span><div><div class="t">Recusar</div><div class="s">Devolver ao operador</div></div></button>`;
+  if(st==='accepted_by_driver') return `
+    <button class="big primary full" onclick="startRoute()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m5 4 14 8-14 8V4Z"/></svg></span><div><div class="t">Sair para entrega</div><div class="s">Já estou a caminho</div></div></button>`;
+  if(st==='in_progress') return `
+    <button class="big primary full" onclick="finishRoute()"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="m5 12 5 5 9-11"/></svg></span><div><div class="t">Finalizar rota</div><div class="s">Marcar todas como entregues</div></div></button>`;
+  return '';
+}
+function renderRoute(){
+  const area=document.getElementById('routeArea'), wait=document.getElementById('waitCard');
+  if(!route){ area.style.display='none'; wait.style.display='flex'; return; }
+  area.style.display='block'; wait.style.display='none';
+  const ods=route.orderDetails||[]; const n=ods.length;
+  const badge=document.getElementById('rBadge');
+  const map={sent_to_driver:['Aguardando aceitação','wait'],accepted_by_driver:['Aceita — a caminho','acc'],in_progress:['Em entrega','prog']};
+  const bm=map[route.status]||['—','wait']; badge.textContent=bm[0]; badge.className='badge '+bm[1];
+  document.getElementById('rStops').textContent=n+(n===1?' parada':' paradas');
+  document.getElementById('rDist').textContent=((route.totalDistanceKm||route.maxKm||0)||'—')+' km';
+  document.getElementById('rTime').textContent=(n?(n*8+6):'—')+' min';
+  document.getElementById('stops').innerHTML=ods.map((o,i)=>stopHTML(o,i,n,route.status)).join('');
+  const tot=ods.reduce((s,o)=>s+(Number(o.total)||0),0);
+  document.getElementById('sPed').textContent=n+(n===1?' pedido':' pedidos');
+  document.getElementById('sPedV').textContent=money(tot);
+  document.getElementById('sFee').textContent=money(tot*0.12);
+  document.getElementById('sRate').textContent=(driver&&driver.acceptanceRate!=null)?driver.acceptanceRate+'%':'100%';
+  document.getElementById('mainActs').innerHTML=mainActsHTML(route.status);
+}
+async function accept(){ if(!route)return; try{await api.accept(route.id);toast('Rota aceita!');load();}catch(e){toast('Erro: '+e.message);} }
+async function startRoute(){ if(!route)return; try{await api.start(route.id);toast('Boa entrega!');load();}catch(e){toast('Erro: '+e.message);} }
+async function deliver(orderId){ if(!route)return; try{const r=await api.complete(route.id,orderId);toast(r.allDone?'Rota concluída!':'Pedido entregue');load();}catch(e){toast('Erro: '+e.message);} }
+async function finishRoute(){ if(!route)return; if(!confirm('Marcar todos os pedidos como entregues e finalizar a rota?'))return; try{await api.finish(route.id);toast('Rota finalizada!');load();}catch(e){toast('Erro: '+e.message);} }
+function recusar(){ toast('Para recusar, fale com o operador (recusa direta em breve).'); }
+function openMaps(){
+  if(!route||!(route.orderDetails||[]).length){toast('Sem paradas');return;}
+  const pts=route.orderDetails.map(o=>{const a=o.address||{};if(a.lat!=null&&a.lng!=null)return a.lat+','+a.lng;return encodeURIComponent([a.street,a.number,a.neighborhood,a.city].filter(Boolean).join(', '));});
+  const dest=pts[pts.length-1], way=pts.slice(0,-1).join('|');
+  window.open('https://www.google.com/maps/dir/?api=1&destination='+dest+(way?'&waypoints='+way:''),'_blank');
+}
+function ligarLoja(){ toast('Telefone da loja em breve'); }
+function renderHistory(list){
+  const box=document.getElementById('history');
+  if(!list||!list.length){ box.innerHTML='<div class="empty">Nenhuma entrega hoje ainda.</div>'; return; }
+  box.innerHTML=list.map(o=>{
+    const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
+    const addr=[(o.address&&o.address.street)||'',(o.address&&o.address.number)||''].filter(Boolean).join(', ');
+    return `<div class="row"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-11"/></svg></div>
+      <div><div class="oid">#${o.displayId||o.externalOrderId||''} <span style="color:var(--dim);font-weight:600">${bairro}</span></div><div class="ad">${addr||'—'}</div></div>
+      <div class="rgt"><div class="st">Entregue</div><div class="tm">${hhmm(o.deliveredAt||o.updatedAt)}</div><div class="vl">${money(o.total)}</div></div></div>`;
+  }).join('');
+}
+async function load(){
+  if(!API){document.getElementById('conn').textContent='Configure a API (config.js).';return;}
+  if(!driver){ driver=await resolveDriver(); if(!driver){document.getElementById('conn').textContent='Nenhum motoboy vinculado a este acesso. Cadastre em Usuários.';return;} }
+  renderStatus();
+  try{
+    const [q,r,h]=await Promise.all([api.queue().catch(()=>[]),api.route(driver.id).catch(()=>null),api.history(driver.id).catch(()=>[])]);
+    document.getElementById('queueN').textContent=(q&&q.length)||0;
+    route=r; renderRoute(); renderHistory(h);
+    document.getElementById('conn').textContent='Atualizado '+hhmm(new Date().toISOString());
+  }catch(e){ document.getElementById('conn').textContent='Sem conexão com o servidor.'; }
+}
+load(); setInterval(load,7000);
 </script>
 </body>
 </html>
