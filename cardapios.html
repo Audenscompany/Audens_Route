@@ -43,7 +43,7 @@
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script src="app.js"></script>
 <script>
-const {api,H,setConn,toast}=AudensShell;
+const {api,H,setConn,toast,API}=AudensShell;
 let stores=[];
 function colorFor(t){t=(t||'').toLowerCase();if(t.includes('hambur'))return '#f5b544';if(t.includes('pizz'))return '#e8632e';return '#7a869a';}
 
@@ -65,6 +65,10 @@ function render(){
         <div class="whrow"><input readonly value="${api.webhookUrl(s)}" id="wh-${s.id}" /><button class="copy" onclick="copyWh('${s.id}')">Copiar</button></div>
         <div class="hint">Identificador: <b>${s.id}</b> · a chave no fim da URL autentica os pedidos deste cardápio.</div>
       </div>
+      <div class="wh" style="margin-top:12px"><label>Token da API do Cardápio Web (X-API-KEY) — puxa cliente, endereço e valor de cada pedido</label>
+        <div class="whrow"><input id="tk-${s.id}" value="${s.apiToken||''}" placeholder="cole aqui o token da loja (Cardápio Web → Configurações → Integrações → API)" /><button class="copy" onclick="saveToken('${s.id}')">Salvar</button></div>
+        <div class="hint">${s.apiToken?'Token salvo ✓ — os detalhes dos pedidos são buscados automaticamente a cada pedido.':'Sem token, o pedido chega só com número e status. Cole o token desta loja para trazer cliente, endereço e valor.'}</div>
+      </div>
     </div>`).join('');
 }
 async function addStore(){
@@ -75,6 +79,7 @@ async function addStore(){
 async function toggleActive(id,active){ try{ await api.patchStore(id,{active}); load(); }catch(e){ toast('Erro'); } }
 async function removeStore(id,name){ if(!confirm(`Remover "${name}"? Os pedidos já recebidos continuam no sistema.`))return; try{ await api.delStore(id); toast('Removido'); load(); }catch(e){ toast('Erro'); } }
 function copyWh(id){ const el=document.getElementById('wh-'+id); el.select(); el.setSelectionRange(0,99999); navigator.clipboard.writeText(el.value).then(()=>toast('URL copiada!')).catch(()=>toast('Selecionado — Ctrl/Cmd+C')); }
+async function saveToken(id){ const v=document.getElementById('tk-'+id).value.trim(); try{ await api.patchStore(id,{apiToken:v}); toast(v?'Token salvo — buscando detalhes…':'Token removido'); load(); if(v)fetch(`${API}/api/enrich-pending`).then(r=>r.json()).then(x=>toast(`Detalhes atualizados: ${x.enriched||0} pedido(s)`)).catch(()=>{}); }catch(e){ toast('Erro ao salvar token'); } }
 
 let logoTarget=null;
 function pickLogo(id){ logoTarget=id; const i=document.getElementById('logoInput'); i.value=''; i.click(); }
