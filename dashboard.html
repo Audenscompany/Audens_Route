@@ -14,9 +14,8 @@
   <div class="grid2">
     <main class="board six" id="board"></main>
     <aside class="rail">
-      <div class="panel"><div class="ph"><b>Fila de motoboys</b></div><div class="panel-empty">Nenhum motoboy online<small>disponível na Fase 2</small></div></div>
-      <div class="panel"><div class="ph"><b>Sugestões de rota</b></div><div class="panel-empty">Sem sugestões no momento<small>agrupamento automático — Fase 3</small></div></div>
-      <div class="panel"><div class="ph"><b>Alertas</b></div><div class="panel-empty" id="alerts">Sem alertas</div></div>
+      <div class="panel"><div class="ph"><b>Fila de motoboys</b><a href="motoboys.html">ver</a></div><div id="fila"><div class="panel-empty">Nenhum motoboy online</div></div></div>
+      <div class="panel"><div class="ph"><b>Alertas</b><span id="alertCount" style="margin-left:auto;font-size:11px;color:var(--faint)"></span></div><div id="alerts"><div class="panel-empty">Sem alertas</div></div></div>
     </aside>
   </div>
 </template>
@@ -26,7 +25,28 @@
 <script src="app.js"></script>
 <script>
 const {IC,LOGO,api,H,COLS,NEXT,setConn}=AudensShell;
-let stores=[],storeMap={},orders=[];
+let stores=[],storeMap={},orders=[],queue=[],routes=[],settings={};
+function minsSince(iso){ if(!iso)return 0; return Math.floor((Date.now()-new Date(iso).getTime())/60000); }
+function computeAlerts(){
+  const a=[];
+  const maxReady=Number(settings.maxReadyWaitingTimeMinutes)||10;
+  const maxDeliv=Number(settings.defaultMaxDeliveryTimeMinutes)||60;
+  orders.forEach(o=>{
+    const num='#'+(o.displayId||o.externalOrderId||'');
+    if(o.status==='waiting_grouping'&&!o.assignedRouteId){ const m=minsSince(o.readyAt||o.groupingStartedAt||o.createdAt); if(m>=maxReady)a.push({lvl:'warn',txt:`${num} pronto há ${m} min sem rota`}); }
+    if(['sent_to_driver','accepted_by_driver','out_for_delivery'].includes(o.status)){ const m=minsSince(o.updatedAt); if(m>=maxDeliv)a.push({lvl:'red',txt:`${num} em entrega há ${m} min (atraso)`}); }
+  });
+  routes.forEach(r=>{ if(r.status==='sent_to_driver'){ const m=minsSince(r.assignedAt); if(m>=3)a.push({lvl:'warn',txt:`Rota ${(r.neighborhoods||[]).join(', ')||''} aguardando aceitação (${m} min)`}); } });
+  return a.slice(0,12);
+}
+function renderRail(){
+  const fila=document.getElementById('fila');
+  fila.innerHTML=queue.length?queue.map((d,i)=>`<div class="q"><span class="pos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${d.name||''}</div></div><span class="eta" style="color:${d.isInsideStoreGeofence?'var(--green)':'var(--faint)'}">${d.isInsideStoreGeofence?'na loja':(d.distanceToStoreMeters!=null?d.distanceToStoreMeters+'m':'online')}</span></div>`).join(''):`<div class="panel-empty">Nenhum motoboy online</div>`;
+  const al=computeAlerts();
+  document.getElementById('alertCount').textContent=al.length?al.length:'';
+  const el=document.getElementById('alerts');
+  el.innerHTML=al.length?al.map(a=>`<div style="display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #1c1830;font-size:12px"><span style="width:8px;height:8px;border-radius:50%;background:${a.lvl==='red'?'var(--red)':'var(--amber)'};margin-top:5px;flex-shrink:0"></span><span style="color:var(--dim)">${a.txt}</span></div>`).join(''):`<div class="panel-empty">Sem alertas · tudo em dia ✓</div>`;
+}
 
 function renderAccounts(){
   const lead=`<div class="lead"><b>Contas conectadas</b><span>${stores.length} conectada(s) · até 5</span></div>`;
@@ -57,11 +77,12 @@ async function advance(id,to){try{await api.setStatus(id,to);load();}catch(e){Au
 async function load(){
   if(!api.hasBackend){setConn('err');renderAccounts();renderKPIs();renderBoard();return;}
   try{
-    const [so,or_]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[])]);
+    const [so,or_,qz,rt,cfg]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.driverQueue().catch(()=>[]),api.allRoutes().catch(()=>[]),api.getSettings().catch(()=>({}))]);
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s); orders=Array.isArray(or_)?or_:[];
+    queue=Array.isArray(qz)?qz:[]; routes=Array.isArray(rt)?rt:[]; settings=cfg||{};
     setConn('live');
   }catch(e){setConn('err');}
-  renderAccounts();renderKPIs();renderBoard();
+  renderAccounts();renderKPIs();renderBoard();renderRail();
 }
 load(); setInterval(load,5000);
 </script>

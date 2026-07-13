@@ -260,6 +260,11 @@ function payLabel(m){m=(m||'').toLowerCase();if(m.includes('pix'))return 'Pix';i
 function isPaid(o){const t=(o.paymentType||'').toLowerCase(),s=(o.paymentStatus||'').toLowerCase();return t==='online'||s==='paid'||s==='approved'||s==='completed';}
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
 function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');}catch(e){}location.href='index.html';}
+// ---------- notificação / som de nova rota ----------
+let lastRouteId, audioCtx=null;
+function primeAudio(){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume(); }catch(e){} }
+function beep(){ try{ if(!audioCtx)return; for(let i=0;i<2;i++){ const t=audioCtx.currentTime+i*0.30; const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g);g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(784,t); o.frequency.setValueAtTime(1046,t+0.14); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.4,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.26); o.start(t); o.stop(t+0.28);} }catch(e){} }
+function notifyNewRoute(){ beep(); try{navigator.vibrate&&navigator.vibrate([220,90,220]);}catch(e){} toast('Nova rota recebida!'); try{ if(window.Notification&&Notification.permission==='granted') new Notification('Audens Route',{body:'Você recebeu uma nova rota. Abra o app para aceitar.'}); }catch(e){} }
 
 let driver=null, route=null, fee=5, lastHistory=[], view='painel';
 
@@ -291,6 +296,7 @@ function renderStatus(){
 }
 async function toggleOnline(){
   if(!driver){toast('Motoboy não identificado');return;}
+  primeAudio(); try{ if(window.Notification&&Notification.permission==='default')Notification.requestPermission(); }catch(e){}
   try{ driver=await api.setStatus(driver.id,!driver.online); renderStatus(); toast(driver.online?'Você está online':'Você ficou offline'); if(driver.online)startGeo();else stopGeo(); load(); }
   catch(e){ toast('Erro: '+e.message); }
 }
@@ -441,6 +447,9 @@ async function load(){
     const [q,r,h,cfg]=await Promise.all([api.queue().catch(()=>[]),api.route(driver.id).catch(()=>null),api.history(driver.id).catch(()=>[]),api.settings().catch(()=>({}))]);
     fee=Number(cfg&&cfg.deliveryFeePerOrder)||5;
     document.getElementById('queueN').textContent=(q&&q.length)||0;
+    const newId=r?r.id:null;
+    if(lastRouteId!==undefined && newId && newId!==lastRouteId && r.status==='sent_to_driver') notifyNewRoute();
+    lastRouteId=newId;
     route=r; renderRoute(); renderHistory(h); renderWallet(); renderPerfil();
     document.getElementById('conn').textContent='Atualizado '+hhmm(new Date().toISOString());
   }catch(e){ document.getElementById('conn').textContent='Sem conexão com o servidor.'; }

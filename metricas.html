@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Métricas</title>
+<style>
+  .mkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px;}
+  .mkpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;}
+  .mkpi .n{font-size:24px;font-weight:800;line-height:1;} .mkpi .l{font-size:11.5px;color:var(--dim);margin-top:6px;} .mkpi .s{font-size:10.5px;color:var(--faint);margin-top:3px;}
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;} @media(max-width:900px){.mgrid{grid-template-columns:1fr;}}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;}
+  .mcard h2{font-size:14.5px;margin:0 0 14px;}
+  .bar{display:flex;align-items:center;gap:10px;margin-bottom:11px;} .bar .lb{font-size:12.5px;width:120px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--dim);}
+  .bar .tk{flex:1;height:10px;background:var(--card2);border-radius:999px;overflow:hidden;} .bar .fl{height:100%;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:999px;}
+  .bar .vl{font-size:12.5px;font-weight:800;width:44px;text-align:right;}
+  .split{display:flex;gap:10px;} .split .s{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;} .split .s .n{font-size:20px;font-weight:800;} .split .s .l{font-size:10.5px;color:var(--faint);margin-top:3px;}
+  .empty{color:var(--faint);font-size:12.5px;text-align:center;padding:16px;}
+  .period{font-size:12px;color:var(--faint);margin-left:auto;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:center"><div><h1>Métricas</h1><p>Os números da operação de hoje.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <section class="mkpis" id="kpis"></section>
+  <div class="mgrid">
+    <div class="mcard"><h2>Entregas por motoboy (hoje)</h2><div id="byDriver"></div></div>
+    <div class="mcard"><h2>Pedidos por bairro (hoje)</h2><div id="byHood"></div></div>
+    <div class="mcard"><h2>Rotas de hoje</h2><div id="routesBox"></div></div>
+    <div class="mcard"><h2>Pedidos por loja (hoje)</h2><div id="byStore"></div></div>
+  </div>
+</template>
+
+<script>window.PAGE='metricas';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,H,setConn}=AudensShell;
+let orders=[],routes=[],drivers=[];
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+const isToday=(iso)=>{if(!iso)return false;const d=new Date(iso),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();};
+const mins=(a,b)=>{if(!a||!b)return null;return (new Date(b).getTime()-new Date(a).getTime())/60000;};
+
+function bars(rows){
+  if(!rows.length)return '<div class="empty">Sem dados hoje.</div>';
+  const max=Math.max(...rows.map(r=>r.v),1);
+  return rows.map(r=>`<div class="bar"><span class="lb">${r.lb}</span><span class="tk"><span class="fl" style="width:${Math.round(r.v/max*100)}%"></span></span><span class="vl">${r.v}</span></div>`).join('');
+}
+function render(){
+  const today=orders.filter(o=>isToday(o.createdAt));
+  const delivToday=orders.filter(o=>o.status==='delivered'&&isToday(o.deliveredAt));
+  const emRota=orders.filter(o=>['sent_to_driver','accepted_by_driver','out_for_delivery'].includes(o.status)).length;
+  const fat=delivToday.reduce((s,o)=>s+(Number(o.total)||0),0);
+  // tempo médio de entrega (criado -> entregue)
+  const tempos=delivToday.map(o=>mins(o.createdAt,o.deliveredAt)).filter(x=>x!=null&&x>=0);
+  const tMedio=tempos.length?Math.round(tempos.reduce((a,b)=>a+b,0)/tempos.length):null;
+  const K=[
+    ['Pedidos hoje',today.length,''],
+    ['Entregues hoje',delivToday.length,''],
+    ['Em rota agora',emRota,''],
+    ['Tempo médio entrega',tMedio!=null?tMedio+' min':'—','do pedido à entrega'],
+    ['Faturamento entregue',money(fat),'soma dos pedidos entregues'],
+  ];
+  document.getElementById('kpis').innerHTML=K.map(k=>`<div class="mkpi"><div class="n">${k[1]}</div><div class="l">${k[0]}</div>${k[2]?`<div class="s">${k[2]}</div>`:''}</div>`).join('');
+
+  // entregas por motoboy
+  const dmap={}; drivers.forEach(d=>dmap[d.id]=d.name);
+  const byD={}; delivToday.forEach(o=>{ const k=o.assignedDriverId||'—'; byD[k]=(byD[k]||0)+1; });
+  const drRows=Object.keys(byD).map(k=>({lb:dmap[k]||'(sem motoboy)',v:byD[k]})).sort((a,b)=>b.v-a.v).slice(0,8);
+  document.getElementById('byDriver').innerHTML=bars(drRows);
+
+  // pedidos por bairro (dos pedidos de hoje)
+  const byH={}; today.forEach(o=>{ const k=(o.address&&o.address.neighborhood)||'—'; byH[k]=(byH[k]||0)+1; });
+  const hRows=Object.keys(byH).map(k=>({lb:k,v:byH[k]})).sort((a,b)=>b.v-a.v).slice(0,8);
+  document.getElementById('byHood').innerHTML=bars(hRows);
+
+  // pedidos por loja
+  const byS={}; today.forEach(o=>{ const k=o.storeName||'—'; byS[k]=(byS[k]||0)+1; });
+  const sRows=Object.keys(byS).map(k=>({lb:k,v:byS[k]})).sort((a,b)=>b.v-a.v).slice(0,8);
+  document.getElementById('byStore').innerHTML=bars(sRows);
+
+  // rotas de hoje
+  const rToday=routes.filter(r=>isToday(r.createdAt));
+  const conc=rToday.filter(r=>r.status==='finished').length;
+  const c2=rToday.filter(r=>r.orderCount===2).length, c3=rToday.filter(r=>r.orderCount>=3).length, exc=rToday.filter(r=>r.isException).length;
+  document.getElementById('routesBox').innerHTML=`
+    <div class="split" style="margin-bottom:12px"><div class="s"><div class="n">${rToday.length}</div><div class="l">rotas criadas</div></div><div class="s"><div class="n">${conc}</div><div class="l">concluídas</div></div></div>
+    <div class="split"><div class="s"><div class="n">${c2}</div><div class="l">com 2 pedidos</div></div><div class="s"><div class="n">${c3}</div><div class="l">com 3 pedidos</div></div><div class="s"><div class="n">${exc}</div><div class="l">exceção (1)</div></div></div>`;
+}
+async function load(){
+  if(!api.hasBackend){setConn('err');return;}
+  try{
+    const [or_,rt,dr]=await Promise.all([api.orders().catch(()=>[]),api.allRoutes().catch(()=>[]),api.drivers().catch(()=>[])]);
+    orders=Array.isArray(or_)?or_:[]; routes=Array.isArray(rt)?rt:[]; drivers=Array.isArray(dr)?dr:[]; setConn('live');
+  }catch(e){ setConn('err'); }
+  render();
+}
+load(); setInterval(load,10000);
+</script>
+</body>
+</html>
