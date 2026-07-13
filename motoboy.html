@@ -57,6 +57,9 @@
   .stop .rgt{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
   .stop .eta{font-size:11.5px;font-weight:700;color:var(--violet3);border:1px solid var(--line2);border-radius:999px;padding:4px 10px;}
   .stop .prio{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:5px;} .stop .prio .d{width:7px;height:7px;border-radius:50%;background:var(--amber);}
+  .charge{font-size:12px;font-weight:700;margin-top:5px;display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:4px 9px;}
+  .charge.due{background:rgba(245,181,68,.14);color:var(--amber);} .charge.paid{background:rgba(52,211,153,.12);color:var(--green);}
+  .charge small{font-weight:600;opacity:.85;}
   .stop.done .num{background:var(--green);border-color:var(--green);}
   .rsum{display:flex;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:6px;}
   .rsum .c{flex:1;display:flex;align-items:center;gap:9px;} .rsum .ic{color:var(--violet3);} .rsum .ic svg{width:19px;height:19px;} .rsum .n{font-size:14.5px;font-weight:800;line-height:1.1;} .rsum .l{font-size:10px;color:var(--faint);}
@@ -249,6 +252,9 @@ const api={
 const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
 const hhmm=(iso)=>{if(!iso)return '';const d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
 function isToday(iso){ if(!iso)return false; const d=new Date(iso),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
+function orderFee(o){ const f=Number(o&&o.deliveryFee); return f>0?f:fee; } // taxa real do Cardápio Web, ou valor fixo de reserva
+function payLabel(m){m=(m||'').toLowerCase();if(m.includes('pix'))return 'Pix';if(m.includes('dinh')||m.includes('cash'))return 'Dinheiro';if(m.includes('cred'))return 'Crédito';if(m.includes('deb'))return 'Débito';if(m.includes('card')||m.includes('cart'))return 'Cartão';return m?m:'—';}
+function isPaid(o){const t=(o.paymentType||'').toLowerCase(),s=(o.paymentStatus||'').toLowerCase();return t==='online'||s==='paid'||s==='approved'||s==='completed';}
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
 function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');}catch(e){}location.href='index.html';}
 
@@ -291,9 +297,11 @@ function stopHTML(o,i,total,status){
   const eta='ETA '+((i+1)*8+2)+' min';
   const delivered=o.status==='delivered';
   const canDeliver=status==='in_progress'&&!delivered;
+  const pago=isPaid(o);
+  const charge=`<div class="charge ${pago?'paid':'due'}">${pago?'Pago online':('A cobrar '+money(o.total))}<small>· ${payLabel(o.paymentMethod)}</small></div>`;
   return `<div class="stop ${delivered?'done':''}">
     <div class="marker"><div class="num">${delivered?'✓':(i+1)}${i===0&&total>1?`<span class="cnt">${total}</span>`:''}</div>${i<total-1?'<div class="line"></div>':''}</div>
-    <div class="info"><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div><div class="addr">${addr}</div></div>
+    <div class="info"><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div><div class="addr">${addr}</div>${charge}</div>
     <div class="rgt"><span class="eta">${eta}</span>${canDeliver?`<button class="mini" style="padding:6px 11px;flex-direction:row" onclick="deliver('${o.id}')">Entregue</button>`:`<span class="prio"><span class="d"></span>Padrão</span>`}</div>
   </div>`;
 }
@@ -323,7 +331,7 @@ function renderRoute(){
   const tot=ods.reduce((s,o)=>s+(Number(o.total)||0),0);
   document.getElementById('sPed').textContent=n+(n===1?' pedido':' pedidos');
   document.getElementById('sPedV').textContent=money(tot);
-  document.getElementById('sFee').textContent=money(n*fee);
+  document.getElementById('sFee').textContent=money(ods.reduce((s,o)=>s+orderFee(o),0));
   document.getElementById('sRate').textContent=(driver&&driver.acceptanceRate!=null)?driver.acceptanceRate+'%':'100%';
   document.getElementById('mainActs').innerHTML=mainActsHTML(route.status);
   renderEntregas();
@@ -354,7 +362,7 @@ function histRow(o){
   const addr=[(o.address&&o.address.street)||'',(o.address&&o.address.number)||''].filter(Boolean).join(', ');
   return `<div class="row"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-11"/></svg></div>
     <div><div class="oid">#${o.displayId||o.externalOrderId||''} <span style="color:var(--dim);font-weight:600">${bairro}</span></div><div class="ad">${addr||'—'}</div></div>
-    <div class="rgt"><div class="st">Entregue</div><div class="tm">${hhmm(o.deliveredAt||o.updatedAt)}</div><div class="vl">${money(o.total)}</div></div></div>`;
+    <div class="rgt"><div class="st">Entregue</div><div class="tm">${hhmm(o.deliveredAt||o.updatedAt)}</div><div class="vl" style="color:var(--green)">+ ${money(orderFee(o))}</div></div></div>`;
 }
 function renderHistory(list){
   lastHistory=list||[];
@@ -364,7 +372,7 @@ function renderHistory(list){
 }
 function renderWallet(){
   const hoje=lastHistory.filter(o=>isToday(o.deliveredAt||o.updatedAt));
-  const count=hoje.length, total=count*fee;
+  const count=hoje.length, total=hoje.reduce((s,o)=>s+orderFee(o),0);
   document.getElementById('wCount').textContent=count;
   document.getElementById('wFee').textContent=money(fee);
   document.getElementById('wTotal').textContent=money(total);
@@ -378,7 +386,7 @@ function renderWallet(){
     const bairro=(o.address&&o.address.neighborhood)||o.storeName||'Entrega';
     return `<div class="row"><div class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-11"/></svg></div>
       <div><div class="oid">#${o.displayId||o.externalOrderId||''} <span style="color:var(--dim);font-weight:600">${bairro}</span></div><div class="ad">${hhmm(o.deliveredAt||o.updatedAt)}</div></div>
-      <div class="rgt"><div class="vl" style="color:var(--green)">+ ${money(fee)}</div></div></div>`;
+      <div class="rgt"><div class="vl" style="color:var(--green)">+ ${money(orderFee(o))}</div></div></div>`;
   }).join(''):'<div class="empty">Nenhuma entrega hoje.</div>';
 }
 function renderPerfil(){
