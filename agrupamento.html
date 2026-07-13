@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Agrupamento</title>
+<style>
+  .agstats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .agstat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:150px;}
+  .agstat .n{font-size:22px;font-weight:800;} .agstat .l{font-size:11.5px;color:var(--dim);margin-top:2px;}
+  .selbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:14px;flex-wrap:wrap;}
+  .selbar .info{font-size:12.5px;color:var(--dim);} .selbar .info b{color:var(--text);}
+  .selbar .rule{font-size:11px;color:var(--faint);} .selbar .sp{margin-left:auto;}
+  .selbar .btn.dis{opacity:.4;pointer-events:none;}
+  .gwrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(188px,1fr));gap:11px;}
+  .gc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px;cursor:pointer;transition:.12s;user-select:none;}
+  .gc:hover{border-color:var(--violet);} .gc.on{border-color:var(--violet);box-shadow:0 0 0 2px rgba(139,92,246,.35);background:#181233;}
+  .gc .chk{position:absolute;top:9px;right:9px;width:19px;height:19px;border-radius:6px;border:1.6px solid var(--line);display:grid;place-items:center;color:transparent;}
+  .gc.on .chk{background:var(--violet);border-color:var(--violet);color:#fff;}
+  .gc .chk svg{width:12px;height:12px;}
+  .gc .r1{display:flex;align-items:center;gap:8px;padding-right:22px;}
+  .gc .lg{width:26px;height:26px;border-radius:7px;overflow:hidden;flex-shrink:0;} .gc .lg img{width:100%;height:100%;object-fit:cover;}
+  .gc .oid{font-size:12px;font-weight:800;} .gc .store{font-size:10.5px;color:var(--dim);}
+  .gc .bairro{font-size:12px;color:var(--dim);margin:8px 0 6px;} .gc .r2{display:flex;justify-content:space-between;align-items:center;}
+  .gc .tm{font-size:10.5px;color:var(--faint);} .gc .val{font-size:12px;font-weight:800;}
+  .sug{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:11px;background:var(--bg);}
+  .sug .h{display:flex;align-items:center;gap:8px;margin-bottom:7px;} .sug .h b{font-size:12.5px;} .sug .h .tag{font-size:10px;color:var(--violet-3);background:rgba(139,92,246,.14);border-radius:999px;padding:2px 8px;font-weight:700;}
+  .sug .ol{font-size:11.5px;color:var(--dim);line-height:1.5;margin-bottom:9px;}
+  .sug .foot{display:flex;align-items:center;gap:8px;} .sug .foot .v{font-size:12px;font-weight:800;margin-right:auto;}
+  .rt{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:11px;}
+  .rt .h{display:flex;align-items:center;gap:8px;margin-bottom:7px;} .rt .h b{font-size:12.5px;}
+  .rt .h .badge{font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px;} .badge.ok{color:var(--green);background:rgba(52,211,153,.14);} .badge.exc{color:var(--amber);background:rgba(251,191,36,.14);}
+  .rt .ol{font-size:11.5px;color:var(--dim);line-height:1.5;margin-bottom:9px;} .rt .ol .pill{display:inline-block;background:var(--card2);border-radius:6px;padding:1px 7px;margin:2px 3px 0 0;font-size:11px;}
+  .rt .foot{display:flex;align-items:center;gap:10px;} .rt .foot .v{font-size:12.5px;font-weight:800;margin-right:auto;}
+  .mini{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:8px;padding:6px 11px;font-size:11.5px;font-weight:700;cursor:pointer;}
+  .mini.g{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;} .mini.d{color:var(--faint);background:none;border:none;} .mini.d:hover{color:var(--red);}
+  .mini.warn{color:var(--amber);background:rgba(251,191,36,.1);border-color:transparent;}
+  .btn.exc{background:rgba(251,191,36,.12);border-color:transparent;color:var(--amber);}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start">
+    <div><h1>Agrupamento</h1><p>Junte 2 a 3 pedidos prontos numa rota. O sistema sugere por bairro; você aprova.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button>
+  </div>
+  <section class="agstats" id="stats"></section>
+  <div class="grid2">
+    <main>
+      <div class="selbar">
+        <div class="info"><b id="selN">0</b> selecionado(s)</div>
+        <div class="rule">mín. <b id="minR">2</b> · máx. <b id="maxR">3</b> por rota</div>
+        <div class="sp"></div>
+        <button class="btn exc" id="forceBtn" style="display:none" onclick="createRoute(true)">Forçar 1 (exceção)</button>
+        <button class="btn primary dis" id="makeBtn" onclick="createRoute(false)">Criar rota</button>
+      </div>
+      <div id="pool"></div>
+    </main>
+    <aside class="rail">
+      <div class="panel">
+        <div class="ph"><b>Sugestões automáticas</b><a href="javascript:void(0)" onclick="loadSuggestions()">gerar</a></div>
+        <div id="suggestions"><div class="panel-empty">Carregando…</div></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><b>Rotas montadas</b></div>
+        <div id="routes"><div class="panel-empty">Carregando…</div></div>
+      </div>
+    </aside>
+  </div>
+</template>
+
+<script>window.PAGE='agrupamento';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {IC,api,H,setConn,toast}=AudensShell;
+let stores=[],storeMap={},pool=[],routes=[],suggestions=[],selected=new Set(),min=2,max=3;
+
+function check(){return `<span class="chk">${IC.check}</span>`;}
+
+function renderStats(){
+  document.getElementById('stats').innerHTML=`
+    <div class="agstat"><div class="n">${pool.length}</div><div class="l">Aguardando agrupamento</div></div>
+    <div class="agstat"><div class="n">${suggestions.length}</div><div class="l">Sugestões prontas</div></div>
+    <div class="agstat"><div class="n">${routes.length}</div><div class="l">Rotas montadas</div></div>`;
+}
+function renderPool(){
+  const box=document.getElementById('pool');
+  if(!pool.length){ box.innerHTML=`<div class="card-b" style="text-align:center;color:var(--faint)">Nenhum pedido aguardando agrupamento.<br><span style="font-size:12px">Marque pedidos como <b>Pronto</b> no Dashboard para eles aparecerem aqui. 🍔🍕</span></div>`; return; }
+  box.innerHTML=`<div class="gwrap">`+pool.map(o=>{
+    const on=selected.has(o.id);
+    const bairro=(o.address&&o.address.neighborhood)||'—';
+    return `<div class="gc ${on?'on':''}" onclick="toggle('${o.id}')">
+      ${check()}
+      <div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
+      <div class="bairro">${bairro}</div>
+      <div class="r2"><span class="tm">${H.rel(o.readyAt||o.groupingStartedAt||o.createdAt)} pronto</span><span class="val">${H.money(o.total)}</span></div>
+    </div>`;
+  }).join('')+`</div>`;
+}
+function renderSelbar(){
+  const n=selected.size;
+  document.getElementById('selN').textContent=n;
+  const make=document.getElementById('makeBtn'), force=document.getElementById('forceBtn');
+  const ok = n>=min && n<=max;
+  make.classList.toggle('dis',!ok);
+  force.style.display = (n===1)?'inline-flex':'none';
+}
+function toggle(id){
+  if(selected.has(id))selected.delete(id);
+  else{ if(selected.size>=max){ toast(`Máximo de ${max} pedidos por rota`); return; } selected.add(id); }
+  renderPool(); renderSelbar();
+}
+function renderSuggestions(){
+  const box=document.getElementById('suggestions');
+  if(!suggestions.length){ box.innerHTML=`<div class="panel-empty">Sem sugestões no momento<small>elas aparecem quando há 2+ pedidos prontos no mesmo bairro</small></div>`; return; }
+  box.innerHTML=suggestions.map((s,i)=>`
+    <div class="sug">
+      <div class="h"><b>${s.neighborhood||'—'}</b><span class="tag">${s.orders.length} pedidos</span></div>
+      <div class="ol">${s.orders.map(o=>`#${o.displayId} · ${o.storeName} · ${H.money(o.total)}`).join('<br>')}</div>
+      <div class="foot"><span class="v">${H.money(s.totalValue)}</span><button class="mini g" onclick='approveSug(${i})'>Aprovar rota</button></div>
+    </div>`).join('');
+}
+function renderRoutes(){
+  const box=document.getElementById('routes');
+  if(!routes.length){ box.innerHTML=`<div class="panel-empty">Nenhuma rota montada ainda<small>crie uma selecionando pedidos ao lado</small></div>`; return; }
+  box.innerHTML=routes.map(r=>`
+    <div class="rt">
+      <div class="h"><b>${(r.neighborhoods||[]).join(', ')||'Rota'}</b><span class="badge ${r.isException?'exc':'ok'}">${r.isException?'exceção · 1 pedido':(r.orderCount+' pedidos')}</span></div>
+      <div class="ol">${(r.orders||[]).map(id=>{const o=orderById(id);return `<span class="pill">#${o?(o.displayId||o.externalOrderId):id.slice(-5)}</span>`;}).join('')}</div>
+      <div class="foot"><span class="v">${H.money(r.totalValue)}</span><span style="font-size:11px;color:var(--faint)">${(r.stores||[]).join(' · ')}</span><button class="mini d" onclick="undoRoute('${r.id}')">desfazer</button></div>
+    </div>`).join('');
+}
+function orderById(id){ return allOrders.find(o=>o.id===id); }
+let allOrders=[];
+
+async function createRoute(force){
+  const ids=[...selected];
+  if(!force && (ids.length<min||ids.length>max)){ toast(`Selecione de ${min} a ${max} pedidos`); return; }
+  if(force && ids.length!==1){ toast('A exceção é para 1 pedido só'); return; }
+  try{
+    await api.createRoute({orderIds:ids, force:!!force, exceptionReason:force?'exceção manual do operador':null});
+    toast(force?'Rota criada (exceção registrada)':'Rota criada'); selected.clear(); await load();
+  }catch(e){ toast('Erro: '+e.message); }
+}
+async function approveSug(i){
+  const s=suggestions[i]; if(!s)return;
+  try{ await api.createRoute({orderIds:s.orderIds, fromSuggestion:true}); toast('Sugestão aprovada — rota criada'); await load(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+async function undoRoute(id){
+  if(!confirm('Desfazer esta rota? Os pedidos voltam para "aguardando agrupamento".'))return;
+  try{ await api.delRoute(id); toast('Rota desfeita'); await load(); }catch(e){ toast('Erro: '+e.message); }
+}
+
+async function loadSuggestions(){
+  try{ suggestions=await api.routeSuggestions(); }catch(e){ suggestions=[]; }
+  renderSuggestions(); renderStats();
+}
+async function load(){
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{
+    const [so,or_,rt]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.routes().catch(()=>[])]);
+    stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
+    allOrders=Array.isArray(or_)?or_:[];
+    pool=allOrders.filter(o=>o.status==='waiting_grouping' && !o.assignedRouteId);
+    routes=Array.isArray(rt)?rt:[];
+    // mantém selecionados só os que ainda estão no pool
+    const poolIds=new Set(pool.map(o=>o.id)); [...selected].forEach(id=>{ if(!poolIds.has(id))selected.delete(id); });
+    setConn('live');
+  }catch(e){ setConn('err'); }
+  document.getElementById('minR').textContent=min; document.getElementById('maxR').textContent=max;
+  renderStats(); renderPool(); renderSelbar(); renderRoutes();
+  await loadSuggestions();
+}
+load(); setInterval(load,8000);
+</script>
+</body>
+</html>
