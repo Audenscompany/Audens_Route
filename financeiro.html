@@ -48,6 +48,7 @@ function fmtDay(k){
   const [y,m,d]=k.split('-'); const dt=new Date(Number(y),Number(m)-1,Number(d));
   return `${d}/${m}/${y} · ${DIAS[dt.getDay()]}`;
 }
+function dmy(k){ const [y,m,d]=k.split('-'); return `${d}/${m}/${y}`; }
 function renderKPIs(){
   const tk=todayKey(), d7=keyMinus(6), month=todayKey().slice(0,7);
   const sum=(f)=>days.filter(f).reduce((s,x)=>s+x.total,0);
@@ -67,17 +68,16 @@ function render(){
         <button class="copybtn" onclick="copyDay('${d.day}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copiar</button>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
       </div>
-      <div class="body">${d.byDriver.map(b=>`<div class="drow"><div class="av">${(b.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${b.name}</div><div class="ct">${b.count} entrega${b.count===1?'':'s'}</div></div><div class="vl">${money(b.total)}</div></div>`).join('')}</div>
+      <div class="body">${d.byDriver.map(b=>`<div class="drow"><div class="av">${(b.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${b.name}</div><div class="ct">${b.count} entrega${b.count===1?'':'s'} · taxas ${money(b.fees)}${b.daily?` + diária ${money(b.daily)}`:''}</div></div><div class="vl">${money(b.total)}</div></div>`).join('')}${(d.unassignedCount>0)?`<div class="drow" style="opacity:.7"><div class="av" style="background:var(--card2);color:var(--faint)">—</div><div><div class="nm" style="color:var(--dim)">Sem motoboy atribuído</div><div class="ct">${d.unassignedCount} entrega${d.unassignedCount===1?'':'s'} · não entram no pagamento</div></div><div class="vl" style="color:var(--faint)">${money(d.unassignedFees)}</div></div>`:''}</div>
     </div>`).join('');
 }
 function toggle(day){ open[day]=!open[day]; render(); }
 function copyDay(day,ev){
   if(ev)ev.stopPropagation();
   const d=days.find(x=>x.day===day); if(!d)return;
-  const titulo=fmtDay(day).replace(' · ',' - ');
-  const lines=[`💰 Motoboys - ${titulo}`,''];
+  const lines=[`💰 Motoboys - ${dmy(day)}`,''];
   d.byDriver.forEach(b=>lines.push(`${b.name}: ${money(b.total)}`));
-  lines.push('',`Total: ${money(d.total)} (${d.count} entregas)`);
+  lines.push('',`Total: ${money(d.total)} (${d.count} entregas${d.dailyRate?` + diária de ${money(d.dailyRate)}/motoboy`:''})`);
   const txt=lines.join('\n');
   const done=()=>toast('Lista copiada! Cole no WhatsApp 📋');
   if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>fallback(txt,done)); }
