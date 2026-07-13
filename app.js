@@ -37,7 +37,7 @@
     pizza:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#3a1414"/><path d="M20 7 33 31a28 28 0 0 1-26 0L20 7Z" fill="#f0b24c"/><path d="M20 12 30 29a22 22 0 0 1-20 0L20 12Z" fill="#e8632e"/><circle cx="17.5" cy="21" r="2.1" fill="#b02020"/><circle cx="23" cy="25" r="2.1" fill="#b02020"/></svg>`,
     store:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#1c1730"/><path d="M11 18l1.5-6h15l1.5 6M11 18h18v1.6a3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-4 0V18ZM13 22v7h14v-7" stroke="#c084fc" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`,
   };
-  const NAV=[['home','Dashboard','dashboard.html','dashboard'],['orders','Pedidos','pedidos.html','pedidos'],['group','Agrupamento','agrupamento.html','agrupamento'],['route','Rotas','em-breve.html?s=Rotas','rotas'],['moto','Motoboys','motoboys.html','motoboys'],['chart','Métricas','em-breve.html?s=Métricas','metricas'],['store','Lojas','cardapios.html','lojas'],['users','Usuários','usuarios.html','usuarios'],['gear','Configurações','em-breve.html?s=Configura%C3%A7%C3%B5es','config']];
+  const NAV=[['home','Dashboard','dashboard.html','dashboard'],['orders','Pedidos','pedidos.html','pedidos'],['group','Agrupamento','agrupamento.html','agrupamento'],['route','Rotas','rotas.html','rotas'],['moto','Motoboys','motoboys.html','motoboys'],['chart','Métricas','em-breve.html?s=Métricas','metricas'],['store','Lojas','cardapios.html','lojas'],['users','Usuários','usuarios.html','usuarios'],['gear','Configurações','em-breve.html?s=Configura%C3%A7%C3%B5es','config']];
 
   function logoHtml(){
     // usa logo.png se existir; senão, o logo padrão em SVG+texto
@@ -124,6 +124,8 @@
     // ciclo da rota
     assignRoute:(id,driverId)=>j(API+'/api/routes/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
     assignNext:(id)=>j(API+'/api/routes/'+id+'/assign-next',{method:'POST'}),
+    allRoutes:()=>j(API+'/api/routes'),
+    declineRoute:(id)=>j(API+'/api/routes/'+id+'/decline',{method:'POST'}),
     acceptRoute:(id)=>j(API+'/api/routes/'+id+'/accept',{method:'POST'}),
     startRoute:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
     completeOrder:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
