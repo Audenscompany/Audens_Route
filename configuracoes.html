@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Configurações</title>
+<style>
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px;}
+  .sec h2{font-size:15px;margin:0 0 4px;} .sec .sub{font-size:12.5px;color:var(--faint);margin-bottom:16px;}
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+  .cfield label{display:block;font-size:12.5px;color:var(--dim);font-weight:600;margin-bottom:6px;}
+  .cfield .u{display:flex;align-items:center;gap:8px;} .cfield .u span{font-size:12.5px;color:var(--faint);}
+  .cfield input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:10px 12px;font-size:14px;}
+  .cfield input:focus{outline:none;border-color:var(--violet);}
+  .cfield .hint{font-size:11px;color:var(--faint);margin-top:5px;}
+  .togrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);} .togrow:last-child{border-bottom:none;}
+  .togrow .t{font-size:13.5px;font-weight:600;} .togrow .s{font-size:11.5px;color:var(--faint);}
+  .sw{width:40px;height:23px;border-radius:999px;background:#3a3f4b;position:relative;transition:.2s;cursor:pointer;flex-shrink:0;margin-left:auto;} .sw::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.2s;} .sw.on{background:var(--green);} .sw.on::after{left:19px;}
+  .savebar{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 40%);padding:14px 0;display:flex;gap:12px;align-items:center;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head"><h1>Configurações</h1><p>Ajuste as regras da operação. As mudanças valem para agrupamento, fila, geofence e pagamento dos motoboys.</p></div>
+
+  <div class="sec">
+    <h2>Agrupamento de pedidos</h2>
+    <div class="sub">Como o sistema junta pedidos prontos em uma rota.</div>
+    <div class="fgrid">
+      <div class="cfield"><label>Mínimo de pedidos por rota</label><input id="minOrdersPerRoute" type="number" min="1" step="1"><div class="hint">Nunca agrupa automático com menos que isso.</div></div>
+      <div class="cfield"><label>Máximo de pedidos por rota</label><input id="maxOrdersPerRoute" type="number" min="1" step="1"><div class="hint">Nunca monta rota com mais que isso.</div></div>
+      <div class="cfield"><label>Distância máxima entre pedidos</label><div class="u"><input id="maxDistanceBetweenGroupedOrdersKm" type="number" min="0" step="0.5"><span>km</span></div><div class="hint">Raio para agrupar pedidos próximos.</div></div>
+      <div class="cfield"><label>Janela de agrupamento</label><div class="u"><input id="groupingWindowMinutes" type="number" min="0" step="1"><span>min</span></div><div class="hint">Tempo que espera juntar mais pedidos.</div></div>
+      <div class="cfield"><label>Tempo máx. aguardando pronto</label><div class="u"><input id="maxReadyWaitingTimeMinutes" type="number" min="0" step="1"><span>min</span></div><div class="hint">Depois disso, gera alerta pro operador.</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Fila de motoboys & GPS</h2>
+    <div class="sub">Como a fila e a chegada na loja funcionam.</div>
+    <div class="fgrid">
+      <div class="cfield"><label>Raio do geofence (chegada na loja)</label><div class="u"><input id="storeGeofenceRadiusMeters" type="number" min="20" step="10"><span>metros</span></div><div class="hint">Distância da loja para considerar que o motoboy chegou.</div></div>
+    </div>
+    <div style="margin-top:8px">
+      <div class="togrow"><div><div class="t">Despacho automático</div><div class="s">Cada rota criada vai direto para o 1º da fila, sem clique.</div></div><div class="sw" id="autoDispatch"></div></div>
+      <div class="togrow"><div><div class="t">Permitir exceção de 1 pedido</div><div class="s">Operador pode forçar uma rota com só 1 pedido.</div></div><div class="sw" id="allowSingleOrderException"></div></div>
+      <div class="togrow"><div><div class="t">Permitir trocar motoboy manualmente</div><div class="s">Operador pode escolher outro motoboy fora da ordem da fila.</div></div><div class="sw" id="allowManualDriverChange"></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Pagamento dos motoboys</h2>
+    <div class="sub">Valor de reserva por entrega (usado quando o pedido não traz a taxa do Cardápio Web).</div>
+    <div class="fgrid">
+      <div class="cfield"><label>Valor por entrega (reserva)</label><div class="u"><span>R$</span><input id="deliveryFeePerOrder" type="number" min="0" step="0.5"></div><div class="hint">Quando o pedido tem a taxa de entrega real, ela é usada; este é o padrão de reserva.</div></div>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <button class="btn primary" id="saveBtn">Salvar configurações</button>
+    <button class="btn" onclick="load()">Descartar</button>
+    <span id="msg" style="font-size:12.5px;color:var(--green)"></span>
+  </div>
+</template>
+
+<script>window.PAGE='config';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+const NUMS=['minOrdersPerRoute','maxOrdersPerRoute','maxDistanceBetweenGroupedOrdersKm','groupingWindowMinutes','maxReadyWaitingTimeMinutes','storeGeofenceRadiusMeters','deliveryFeePerOrder'];
+const TOGS=['autoDispatch','allowSingleOrderException','allowManualDriverChange'];
+function setTog(id,on){const el=document.getElementById(id);el.classList.toggle('on',!!on);el.onclick=()=>el.classList.toggle('on');}
+async function load(){
+  if(!api.hasBackend){setConn('err');return;}
+  try{
+    const s=await api.getSettings(); setConn('live');
+    NUMS.forEach(k=>{ if(s[k]!=null)document.getElementById(k).value=s[k]; });
+    TOGS.forEach(k=>setTog(k,s[k]));
+    document.getElementById('msg').textContent='';
+  }catch(e){ setConn('err'); }
+}
+async function save(){
+  const body={};
+  NUMS.forEach(k=>{ const v=parseFloat(document.getElementById(k).value); if(!isNaN(v))body[k]=v; });
+  TOGS.forEach(k=>{ body[k]=document.getElementById(k).classList.contains('on'); });
+  if(body.minOrdersPerRoute&&body.maxOrdersPerRoute&&body.minOrdersPerRoute>body.maxOrdersPerRoute){ toast('O mínimo não pode ser maior que o máximo'); return; }
+  try{ await api.patchSettings(body); const m=document.getElementById('msg'); m.textContent='Salvo ✓'; toast('Configurações salvas'); setTimeout(()=>m.textContent='',2500); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+document.getElementById('saveBtn').onclick=save;
+load();
+</script>
+</body>
+</html>
