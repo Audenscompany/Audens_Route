@@ -53,7 +53,7 @@
   .stop .num{width:30px;height:30px;border-radius:50%;background:var(--card2);border:2px solid var(--violet2);color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;position:relative;}
   .stop .num .cnt{position:absolute;top:-6px;right:-8px;background:var(--violet);color:#fff;font-size:9px;font-weight:800;border-radius:999px;min-width:16px;height:16px;display:grid;place-items:center;}
   .stop .line{width:2px;flex:1;min-height:22px;background:repeating-linear-gradient(var(--violet2) 0 4px,transparent 4px 8px);margin:3px 0;}
-  .stop .info{flex:1;min-width:0;} .stop .oid{font-size:11.5px;color:var(--faint);font-weight:700;} .stop .bairro{font-size:14.5px;font-weight:700;margin:1px 0 2px;} .stop .addr{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stop .info{flex:1;min-width:0;} .stop .oid{font-size:11.5px;color:var(--faint);font-weight:700;} .stop .bairro{font-size:14.5px;font-weight:700;margin:1px 0 2px;} .stop .addr{font-size:12px;color:var(--dim);line-height:1.4;}
   .stop .rgt{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
   .stop .eta{font-size:11.5px;font-weight:700;color:var(--violet3);border:1px solid var(--line2);border-radius:999px;padding:4px 10px;}
   .stop .prio{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:5px;} .stop .prio .d{width:7px;height:7px;border-radius:50%;background:var(--amber);}
@@ -93,6 +93,12 @@
   .empty{color:var(--faint);font-size:13px;text-align:center;padding:22px 8px;}
   .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:80;max-width:88%;text-align:center;} .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
   .conn{font-size:11px;color:var(--faint);text-align:center;padding:4px;}
+  .picker{position:fixed;inset:0;background:rgba(6,4,14,.92);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .pbox{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;}
+  .pbox .ph{font-size:16px;font-weight:800;margin-bottom:14px;text-align:center;}
+  .pitem{width:100%;display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:9px;cursor:pointer;color:var(--text);text-align:left;}
+  .pitem:active{border-color:var(--violet);} .pitem .pav{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;flex-shrink:0;} .pitem span{font-size:14px;font-weight:600;} .pitem small{display:block;font-size:11px;color:var(--faint);font-weight:400;}
+  .phint{font-size:11px;color:var(--faint);text-align:center;margin-top:8px;line-height:1.5;}
   .vtitle{font-size:20px;font-weight:800;margin:2px 2px 12px;}
 </style>
 </head>
@@ -261,7 +267,7 @@ function orderFee(o){ const f=Number(o&&o.deliveryFee); return f>0?f:fee; } // t
 function payLabel(m){m=(m||'').toLowerCase();if(m.includes('pix'))return 'Pix';if(m.includes('dinh')||m.includes('cash'))return 'Dinheiro';if(m.includes('cred'))return 'Crédito';if(m.includes('deb'))return 'Débito';if(m.includes('card')||m.includes('cart'))return 'Cartão';return m?m:'—';}
 function isPaid(o){const t=(o.paymentType||'').toLowerCase(),s=(o.paymentStatus||'').toLowerCase();return t==='online'||s==='paid'||s==='approved'||s==='completed';}
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
-function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');}catch(e){}location.href='index.html';}
+function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');sessionStorage.removeItem('audens_driver');}catch(e){}location.href='index.html';}
 // ---------- notificação / som de nova rota ----------
 let lastRouteId, audioCtx=null;
 function primeAudio(){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume(); }catch(e){} }
@@ -279,10 +285,21 @@ function go(v){
 
 async function resolveDriver(){
   let email=''; try{email=sessionStorage.getItem('audens_email')||'';}catch(e){}
-  if(email){ try{const w=await api.whoami(email); if(w&&w.driverId){return await api.driver(w.driverId).catch(()=>null);}}catch(e){} }
-  try{const ds=await api.drivers(); if(ds&&ds.length) return ds[0];}catch(e){}
-  return null;
+  if(email){ try{const w=await api.whoami(email); if(w&&w.driverId){const d=await api.driver(w.driverId).catch(()=>null); if(d)return d;}}catch(e){} }
+  let picked=''; try{picked=sessionStorage.getItem('audens_driver')||'';}catch(e){}
+  if(picked){ const d=await api.driver(picked).catch(()=>null); if(d)return d; }
+  return null; // não identificado -> mostra o seletor
 }
+async function showDriverPicker(){
+  document.getElementById('conn').textContent='';
+  const ds=await api.drivers().catch(()=>[]);
+  if(!ds.length){ document.getElementById('conn').textContent='Nenhum motoboy cadastrado. Cadastre em Usuários.'; return; }
+  let ov=document.getElementById('picker');
+  if(!ov){ ov=document.createElement('div'); ov.id='picker'; ov.className='picker'; document.body.appendChild(ov); }
+  ov.innerHTML=`<div class="pbox"><div class="ph">Entrar como qual motoboy?</div>${ds.map(d=>`<button class="pitem" onclick="pickDriver('${d.id}')"><span class="pav">${(d.name||'?').trim().charAt(0).toUpperCase()}</span><span>${d.name}<small>${d.email||''}</small></span></button>`).join('')}<div class="phint">Dica: entre com o e-mail e senha do motoboy na tela de login que ele já cai direto na conta dele — sem precisar escolher.</div></div>`;
+  ov.style.display='flex';
+}
+function pickDriver(id){ try{sessionStorage.setItem('audens_driver',id);}catch(e){} const ov=document.getElementById('picker'); if(ov)ov.style.display='none'; driver=null; load(); }
 function avatarHTML(d,imgOnly){
   if(d&&d.photoUrl) return `<img src="${d.photoUrl}">`;
   return imgOnly?'':((d&&d.name||'M').trim().charAt(0).toUpperCase());
@@ -325,8 +342,8 @@ function renderGeo(){
 }
 function stopHTML(o,i,total,status){
   const A=o.address||{};
-  const bairro=A.neighborhood||A.city||o.storeName||'Entrega';
-  const addr=[[A.street,A.number].filter(Boolean).join(', '),A.complement,A.reference?('ref: '+A.reference):''].filter(Boolean).join(' · ')||'—';
+  const bairro=A.neighborhood||'Entrega';
+  const addr=A.text||[[A.street,A.number].filter(Boolean).join(', '),A.complement,A.reference?('ref: '+A.reference):''].filter(Boolean).join(' · ')||'—';
   const eta='ETA '+((i+1)*8+2)+' min';
   const delivered=o.status==='delivered';
   const canDeliver=status==='in_progress'&&!delivered;
@@ -446,7 +463,7 @@ document.getElementById('photoInput').addEventListener('change',async(e)=>{
 
 async function load(){
   if(!API){document.getElementById('conn').textContent='Configure a API (config.js).';return;}
-  if(!driver){ driver=await resolveDriver(); if(!driver){document.getElementById('conn').textContent='Nenhum motoboy vinculado a este acesso. Cadastre em Usuários.';return;} }
+  if(!driver){ driver=await resolveDriver(); if(!driver){ return showDriverPicker(); } }
   renderStatus();
   if(driver&&driver.online){ startGeo(); } else { stopGeo(); }
   try{
