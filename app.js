@@ -127,6 +127,8 @@
     startRoute:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
     completeOrder:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
     finishRoute:(id)=>j(API+'/api/routes/'+id+'/finish',{method:'POST'}),
+    getSettings:()=>j(API+'/api/settings'),
+    patchSettings:(b)=>j(API+'/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
   };
 
   // helpers de formatação/domínio
