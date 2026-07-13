@@ -24,8 +24,8 @@
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script src="app.js"></script>
 <script>
-const {IC,LOGO,api,H,COLS,NEXT,setConn}=AudensShell;
-let stores=[],storeMap={},orders=[],queue=[],routes=[],settings={};
+const {IC,LOGO,api,H,COLS,NEXT,setConn,toast}=AudensShell;
+let stores=[],storeMap={},orders=[],queue=[],routes=[],settings={},drivers=[],pickForOrder=null;
 function minsSince(iso){ if(!iso)return 0; return Math.floor((Date.now()-new Date(iso).getTime())/60000); }
 function computeAlerts(){
   const a=[];
@@ -59,12 +59,37 @@ function renderKPIs(){
   document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div><div class="num">${k[3]}</div><div class="foot">em tempo real</div></div>`).join('');
 }
 function cardHTML(o){
-  const bairro=(o.address&&(o.address.neighborhood||o.address.city))||'—';
+  const A=o.address||{};
+  const bairro=A.neighborhood||(A.text?(A.text.length>30?A.text.slice(0,30)+'…':A.text):'')||'—';
   const nx=NEXT[o.status];
   const act=nx?`<button class="act" style="background:${nx[2]}" onclick="advance('${o.id}','${nx[0]}')">${nx[1]}</button>`:'';
+  const deliv=o.status!=='delivered'?`<button class="act" style="background:none;border:1px solid var(--line);color:var(--dim);margin-top:6px" onclick="askDeliver('${o.id}')">🛵 entregue por motoboy</button>`:'';
   return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
     <div class="bairro">${bairro}</div>
-    <div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div>${act}</div>`;
+    <div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div>${act}${deliv}</div>`;
+}
+function askDeliver(orderId){ pickForOrder=orderId; renderPicker(); }
+function closePicker(){ pickForOrder=null; renderPicker(); }
+function renderPicker(){
+  let ov=document.getElementById('drvPick');
+  if(!pickForOrder){ if(ov)ov.remove(); return; }
+  const o=orders.find(x=>x.id===pickForOrder);
+  const num=o?('Nº '+(o.displayId||o.externalOrderId||'')):'';
+  if(!ov){ ov=document.createElement('div'); ov.id='drvPick'; document.body.appendChild(ov); }
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9999';
+  const list=drivers.length?drivers.map(d=>`<button onclick="doDeliver('${d.id}')" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer;font-size:13.5px"><span style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800">${(d.name||'?').trim().charAt(0).toUpperCase()}</span>${d.name||d.id}</button>`).join(''):'<div style="color:var(--faint);padding:10px">Nenhum motoboy cadastrado.</div>';
+  ov.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(360px,92vw)" onclick="event.stopPropagation()">
+    <div style="font-size:15px;font-weight:800;margin-bottom:3px">Quem entregou o pedido ${num}?</div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:14px">O pedido será marcado como entregue e contará no financeiro do motoboy.</div>
+    ${list}
+    <button onclick="closePicker()" style="width:100%;background:none;border:none;color:var(--faint);padding:8px;margin-top:4px;cursor:pointer;font-size:12.5px">cancelar</button>
+  </div>`;
+  ov.onclick=closePicker;
+}
+async function doDeliver(driverId){
+  const orderId=pickForOrder; if(!orderId)return;
+  try{ const r=await api.deliverManual(orderId,driverId); pickForOrder=null; renderPicker(); toast('Marcado como entregue por '+(r.driverName||'motoboy')); load(); }
+  catch(e){ toast('Erro: '+e.message); }
 }
 function renderBoard(){
   document.getElementById('board').innerHTML=COLS.map(col=>{
@@ -77,9 +102,9 @@ async function advance(id,to){try{await api.setStatus(id,to);load();}catch(e){Au
 async function load(){
   if(!api.hasBackend){setConn('err');renderAccounts();renderKPIs();renderBoard();return;}
   try{
-    const [so,or_,qz,rt,cfg]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.driverQueue().catch(()=>[]),api.allRoutes().catch(()=>[]),api.getSettings().catch(()=>({}))]);
+    const [so,or_,qz,rt,cfg,dr]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.driverQueue().catch(()=>[]),api.allRoutes().catch(()=>[]),api.getSettings().catch(()=>({})),api.drivers().catch(()=>[])]);
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s); orders=Array.isArray(or_)?or_:[];
-    queue=Array.isArray(qz)?qz:[]; routes=Array.isArray(rt)?rt:[]; settings=cfg||{};
+    queue=Array.isArray(qz)?qz:[]; routes=Array.isArray(rt)?rt:[]; settings=cfg||{}; drivers=Array.isArray(dr)?dr:[];
     setConn('live');
   }catch(e){setConn('err');}
   renderAccounts();renderKPIs();renderBoard();renderRail();
