@@ -31,8 +31,10 @@ function computeAlerts(){
   const a=[];
   const maxReady=Number(settings.maxReadyWaitingTimeMinutes)||10;
   const maxDeliv=Number(settings.defaultMaxDeliveryTimeMinutes)||60;
+  const maxPrep=Number(settings.maxPrepAlertMinutes)||40;
   orders.forEach(o=>{
     const num='#'+(o.displayId||o.externalOrderId||'');
+    if(o.status==='preparing'){ const m=minsSince(o.preparingAt||o.createdAt); if(m>=maxPrep)a.push({lvl:'red',txt:`${num} em preparo há ${m} min (passou de ${maxPrep} min)`}); }
     if(o.status==='waiting_grouping'&&!o.assignedRouteId){ const m=minsSince(o.readyAt||o.groupingStartedAt||o.createdAt); if(m>=maxReady)a.push({lvl:'warn',txt:`${num} pronto há ${m} min sem rota`}); }
     if(['sent_to_driver','accepted_by_driver','out_for_delivery'].includes(o.status)){ const m=minsSince(o.updatedAt); if(m>=maxDeliv)a.push({lvl:'red',txt:`${num} em entrega há ${m} min (atraso)`}); }
   });
@@ -91,9 +93,10 @@ async function doDeliver(driverId){
   try{ const r=await api.deliverManual(orderId,driverId); pickForOrder=null; renderPicker(); toast('Marcado como entregue por '+(r.driverName||'motoboy')); load(); }
   catch(e){ toast('Erro: '+e.message); }
 }
+function refTime(o){ return new Date(o.readyAt||o.preparingAt||o.createdAt||0).getTime(); }
 function renderBoard(){
   document.getElementById('board').innerHTML=COLS.map(col=>{
-    const items=orders.filter(o=>col.st.includes(o.status));
+    const items=orders.filter(o=>col.st.includes(o.status)).sort((a,b)=>refTime(a)-refTime(b));
     const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
     return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body">${cards}</div></div>`;
   }).join('');
