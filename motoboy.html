@@ -60,6 +60,8 @@
   .charge{font-size:12px;font-weight:700;margin-top:5px;display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:4px 9px;}
   .charge.due{background:rgba(245,181,68,.14);color:var(--amber);} .charge.paid{background:rgba(52,211,153,.12);color:var(--green);}
   .charge small{font-weight:600;opacity:.85;}
+  .stop .cust{font-size:12.5px;color:var(--text);font-weight:600;margin:2px 0;}
+  .callbtn{display:inline-flex;align-items:center;gap:6px;background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.3);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;text-decoration:none;} .callbtn svg{width:14px;height:14px;} .callbtn:active{filter:brightness(1.15);}
   .stop.done .num{background:var(--green);border-color:var(--green);}
   .rsum{display:flex;gap:10px;background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:6px;}
   .rsum .c{flex:1;display:flex;align-items:center;gap:9px;} .rsum .ic{color:var(--violet3);} .rsum .ic svg{width:19px;height:19px;} .rsum .n{font-size:14.5px;font-weight:800;line-height:1.1;} .rsum .l{font-size:10px;color:var(--faint);}
@@ -328,11 +330,14 @@ function stopHTML(o,i,total,status){
   const delivered=o.status==='delivered';
   const canDeliver=status==='in_progress'&&!delivered;
   const pago=isPaid(o);
+  const cname=(o.customer&&o.customer.name)||'';
+  const phone=(o.customer&&o.customer.phone||'').replace(/[^0-9+]/g,'');
   const charge=`<div class="charge ${pago?'paid':'due'}">${pago?'Pago online':('A cobrar '+money(o.total))}<small>· ${payLabel(o.paymentMethod)}</small></div>`;
+  const call=phone?`<a class="callbtn" href="tel:${phone}" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M5 4h3l2 5-2 1a11 11 0 0 0 5 5l1-2 5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/></svg>Ligar</a>`:'';
   return `<div class="stop ${delivered?'done':''}">
     <div class="marker"><div class="num">${delivered?'✓':(i+1)}${i===0&&total>1?`<span class="cnt">${total}</span>`:''}</div>${i<total-1?'<div class="line"></div>':''}</div>
-    <div class="info"><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div><div class="addr">${addr}</div>${charge}</div>
-    <div class="rgt"><span class="eta">${eta}</span>${canDeliver?`<button class="mini" style="padding:6px 11px;flex-direction:row" onclick="deliver('${o.id}')">Entregue</button>`:`<span class="prio"><span class="d"></span>Padrão</span>`}</div>
+    <div class="info"><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="bairro">${bairro}</div>${cname?`<div class="cust">${cname}</div>`:''}<div class="addr">${addr}</div>${charge}</div>
+    <div class="rgt"><span class="eta">${eta}</span>${call}${canDeliver?`<button class="mini" style="padding:6px 11px;flex-direction:row" onclick="deliver('${o.id}')">Entregue</button>`:`<span class="prio"><span class="d"></span>Padrão</span>`}</div>
   </div>`;
 }
 function mainActsHTML(st){
