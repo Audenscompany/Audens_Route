@@ -30,13 +30,14 @@
     thumb:S('<path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Z"/><path d="M7 11l4-7a2 2 0 0 1 2 2v3h5.2a2 2 0 0 1 2 2.4l-1.2 6A2 2 0 0 1 17 20H7"/>'),
     logout:S('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 12H3m0 0 3-3m-3 3 3 3"/>'),
     build:S('<path d="M14 6l4 4-8 8H6v-4l8-8Z"/><path d="M13 7l4 4"/>'),
+    users:S('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-5 5.5-5s5.5 1.7 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 14.5c2.2.5 3.5 2 3.5 4.5"/>'),
   };
   const LOGO={
     burger:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#3a2a10"/><path d="M8 17c0-4.4 5.4-7.5 12-7.5S32 12.6 32 17H8Z" fill="#f5b544"/><rect x="8" y="19" width="24" height="3.4" rx="1.5" fill="#3aa35a"/><rect x="8" y="21.4" width="24" height="3.4" rx="1.5" fill="#d3452e"/><path d="M8 25c0 3.6 5.4 6 12 6s12-2.4 12-6v-1.2H8V25Z" fill="#d79b46"/></svg>`,
     pizza:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#3a1414"/><path d="M20 7 33 31a28 28 0 0 1-26 0L20 7Z" fill="#f0b24c"/><path d="M20 12 30 29a22 22 0 0 1-20 0L20 12Z" fill="#e8632e"/><circle cx="17.5" cy="21" r="2.1" fill="#b02020"/><circle cx="23" cy="25" r="2.1" fill="#b02020"/></svg>`,
     store:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#1c1730"/><path d="M11 18l1.5-6h15l1.5 6M11 18h18v1.6a3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-4 0V18ZM13 22v7h14v-7" stroke="#c084fc" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`,
   };
-  const NAV=[['home','Dashboard','dashboard.html','dashboard'],['orders','Pedidos','pedidos.html','pedidos'],['group','Agrupamento','agrupamento.html','agrupamento'],['route','Rotas','em-breve.html?s=Rotas','rotas'],['moto','Motoboys','em-breve.html?s=Motoboys','motoboys'],['chart','Métricas','em-breve.html?s=Métricas','metricas'],['store','Lojas','cardapios.html','lojas'],['gear','Configurações','em-breve.html?s=Configura%C3%A7%C3%B5es','config']];
+  const NAV=[['home','Dashboard','dashboard.html','dashboard'],['orders','Pedidos','pedidos.html','pedidos'],['group','Agrupamento','agrupamento.html','agrupamento'],['route','Rotas','em-breve.html?s=Rotas','rotas'],['moto','Motoboys','em-breve.html?s=Motoboys','motoboys'],['chart','Métricas','em-breve.html?s=Métricas','metricas'],['store','Lojas','cardapios.html','lojas'],['users','Usuários','usuarios.html','usuarios'],['gear','Configurações','em-breve.html?s=Configura%C3%A7%C3%B5es','config']];
 
   function logoHtml(){
     // usa logo.png se existir; senão, o logo padrão em SVG+texto
@@ -108,6 +109,24 @@
     createRoute:(b)=>j(API+'/api/routes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
     approveRoute:(id)=>j(API+'/api/routes/'+id+'/approve',{method:'POST'}),
     delRoute:(id)=>j(API+'/api/routes/'+id,{method:'DELETE'}),
+    // usuários
+    users:()=>j(API+'/api/users'),
+    createUser:(b)=>j(API+'/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
+    setUserRole:(uid,role)=>j(API+'/api/users/'+uid+'/role',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role})}),
+    delUser:(uid)=>j(API+'/api/users/'+uid,{method:'DELETE'}),
+    whoami:(email)=>j(API+'/api/whoami?email='+encodeURIComponent(email)),
+    // motoboys
+    drivers:()=>j(API+'/api/drivers'),
+    driverQueue:()=>j(API+'/api/drivers/queue'),
+    setDriverStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
+    driverRoute:(id)=>j(API+'/api/drivers/'+id+'/route'),
+    driverHistory:(id)=>j(API+'/api/drivers/'+id+'/history'),
+    // ciclo da rota
+    assignRoute:(id,driverId)=>j(API+'/api/routes/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
+    acceptRoute:(id)=>j(API+'/api/routes/'+id+'/accept',{method:'POST'}),
+    startRoute:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
+    completeOrder:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
+    finishRoute:(id)=>j(API+'/api/routes/'+id+'/finish',{method:'POST'}),
   };
 
   // helpers de formatação/domínio
