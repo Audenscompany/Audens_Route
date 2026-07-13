@@ -15,6 +15,7 @@
   .day .dt{font-size:14.5px;font-weight:800;} .day .sub{font-size:11.5px;color:var(--faint);}
   .day .tot{margin-left:auto;text-align:right;} .day .tot .v{font-size:16px;font-weight:800;color:var(--green);} .day .tot .l{font-size:10px;color:var(--faint);}
   .day .chev{color:var(--faint);transition:.2s;width:18px;height:18px;} .day.open .chev{transform:rotate(180deg);}
+  .copybtn{border:1px solid var(--line2);background:var(--card2);color:var(--text);border-radius:8px;padding:6px 11px;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;} .copybtn:hover{border-color:var(--violet);} .copybtn svg{width:13px;height:13px;}
   .day .body{display:none;padding:0 16px 12px;} .day.open .body{display:block;}
   .drow{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line);}
   .drow .av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;font-size:12px;flex-shrink:0;}
@@ -35,7 +36,7 @@
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script src="app.js"></script>
 <script>
-const {api,setConn}=AudensShell;
+const {api,setConn,toast}=AudensShell;
 let days=[],open={};
 const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
 const DIAS=['dom','seg','ter','qua','qui','sex','sáb'];
@@ -63,12 +64,26 @@ function render(){
       <div class="head" onclick="toggle('${d.day}')">
         <div><div class="dt">${fmtDay(d.day)}</div><div class="sub">${d.count} entrega${d.count===1?'':'s'} · ${d.byDriver.length} motoboy${d.byDriver.length===1?'':'s'}</div></div>
         <div class="tot"><div class="v">${money(d.total)}</div><div class="l">a pagar</div></div>
+        <button class="copybtn" onclick="copyDay('${d.day}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copiar</button>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
       </div>
       <div class="body">${d.byDriver.map(b=>`<div class="drow"><div class="av">${(b.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${b.name}</div><div class="ct">${b.count} entrega${b.count===1?'':'s'}</div></div><div class="vl">${money(b.total)}</div></div>`).join('')}</div>
     </div>`).join('');
 }
 function toggle(day){ open[day]=!open[day]; render(); }
+function copyDay(day,ev){
+  if(ev)ev.stopPropagation();
+  const d=days.find(x=>x.day===day); if(!d)return;
+  const titulo=fmtDay(day).replace(' · ',' - ');
+  const lines=[`💰 Motoboys - ${titulo}`,''];
+  d.byDriver.forEach(b=>lines.push(`${b.name}: ${money(b.total)}`));
+  lines.push('',`Total: ${money(d.total)} (${d.count} entregas)`);
+  const txt=lines.join('\n');
+  const done=()=>toast('Lista copiada! Cole no WhatsApp 📋');
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>fallback(txt,done)); }
+  else fallback(txt,done);
+}
+function fallback(txt,done){ const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done();}catch(e){toast('Não consegui copiar automaticamente');}ta.remove(); }
 async function load(){
   if(!api.hasBackend){setConn('err');return;}
   try{ days=await api.driverFees(); setConn('live'); }catch(e){ setConn('err'); days=[]; }
