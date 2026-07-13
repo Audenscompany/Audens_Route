@@ -104,6 +104,7 @@
     patchStore:(id,b)=>j(API+'/api/stores/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
     delStore:(id)=>j(API+'/api/stores/'+id,{method:'DELETE'}),
     setStatus:(id,st)=>j(`${API}/api/orders/${id}/status`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st})}),
+    deliverManual:(id,driverId)=>j(`${API}/api/orders/${id}/deliver-manual`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
     webhookUrl:(s)=>`${API}/api/webhooks/orders/${s.id}?key=${s.webhookSecret}`,
     routes:()=>j(API+'/api/routes?active=true'),
     routeSuggestions:()=>j(API+'/api/routes/suggestions'),
