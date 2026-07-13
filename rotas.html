@@ -25,6 +25,15 @@
   .sw{width:38px;height:22px;border-radius:999px;background:#3a3f4b;position:relative;transition:.2s;cursor:pointer;flex-shrink:0;} .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;} .sw.on{background:var(--green);} .sw.on::after{left:18px;}
   .auto{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:16px;}
   .auto .t{font-size:13px;font-weight:700;} .auto .s{font-size:11.5px;color:var(--faint);}
+  .editor{margin-top:11px;border-top:1px dashed var(--line);padding-top:11px;}
+  .editor .et{font-size:11.5px;font-weight:700;color:var(--dim);margin-bottom:8px;}
+  .orow{display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--card2);border-radius:9px;margin-bottom:6px;font-size:12.5px;}
+  .orow .oi{font-weight:700;} .orow .ob{color:var(--faint);font-size:11px;}
+  .orow .rm{margin-left:auto;border:1px solid var(--line);background:none;color:var(--faint);border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;} .orow .rm:hover{border-color:var(--red);color:var(--red);}
+  .addrow{display:flex;gap:8px;align-items:center;margin-top:9px;}
+  .addrow select{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12.5px;}
+  .addrow .add{border:none;background:linear-gradient(90deg,#3aa35a,#2f8f4e);color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+  .editor .warn{font-size:11px;color:var(--amber);margin-top:8px;}
 </style>
 </head>
 <body>
@@ -45,7 +54,7 @@
 <script src="app.js"></script>
 <script>
 const {api,H,setConn,toast}=AudensShell;
-let routes=[],orderMap={},filter='todas',auto=false;
+let routes=[],orderMap={},allOrders=[],filter='todas',auto=false,editing=null;
 const ST={approved:['Aguardando despacho','bg-amber'],sent_to_driver:['Enviada ao motoboy','bg-cyan'],accepted_by_driver:['Aceita','bg-cyan'],in_progress:['Em entrega','bg-cyan'],finished:['Concluída','bg-green'],canceled:['Cancelada','bg-faint']};
 const isToday=(iso)=>{if(!iso)return false;const d=new Date(iso),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();};
 const hhmm=(iso)=>{if(!iso)return '—';const d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
@@ -77,16 +86,47 @@ function render(){
     const pills=(r.orders||[]).map(id=>{const o=orderMap[id];return `<span class="pill">#${o?(o.displayId||o.externalOrderId):id.slice(-5)}</span>`;}).join('');
     const moto=r.driverName?`🛵 <b>${r.driverName}</b>`:'sem motoboy';
     const dist=r.totalDistanceKm!=null?String(r.totalDistanceKm).replace('.',',')+' km':'—';
+    const canEdit=!['finished','canceled'].includes(r.status);
+    const editBtn=canEdit?`<button class="mini" onclick="toggleEdit('${r.id}')">${editing===r.id?'fechar':'✏ editar pedidos'}</button>`:'';
     const acts=r.status==='approved'?`<button class="mini g" onclick="despachar('${r.id}')">Despachar p/ fila</button><button class="mini d" onclick="desfazer('${r.id}')">desfazer</button>`:'';
+    const foot=(acts||editBtn)?`<div class="foot">${acts}${editBtn}</div>`:'';
     return `<div class="rt">
       <div class="h"><b>${(r.neighborhoods||[]).join(', ')||'Rota'}</b><span class="badge ${cls}">${txt}</span></div>
       <div class="pills">${pills}</div>
       <div class="rmeta"><span>${moto}</span><span>${(r.orderCount||0)} pedidos</span><span>${dist}</span><span>Valor: <b>${H.money(r.totalValue)}</b></span></div>
       <div class="timeline"><span><b>Criada</b> ${hhmm(r.createdAt)}</span><span>·</span><span><b>Despachada</b> ${hhmm(r.assignedAt)}</span><span>·</span><span><b>Concluída</b> ${hhmm(r.finishedAt)}</span></div>
-      ${acts?`<div class="foot">${acts}</div>`:''}
+      ${foot}
+      ${editing===r.id?editorHTML(r):''}
     </div>`;
   }).join('');
 }
+function orderLabel(o){ return '#'+(o.displayId||o.externalOrderId||o.id.slice(-5))+(o.address&&o.address.neighborhood?' · '+o.address.neighborhood:''); }
+function editorHTML(r){
+  const rows=(r.orders||[]).map(id=>{const o=orderMap[id];const nm=o?orderLabel(o):'#'+id.slice(-5);const bairro=o&&o.address&&o.address.neighborhood?o.address.neighborhood:'';
+    return `<div class="orow"><span class="oi">${o?('#'+(o.displayId||o.externalOrderId)):('#'+id.slice(-5))}</span><span class="ob">${bairro}</span><button class="rm" onclick="removeOrder('${r.id}','${id}')">✕ remover</button></div>`;}).join('');
+  // pedidos disponíveis: aguardando agrupamento e sem rota
+  const avail=allOrders.filter(o=>o.status==='waiting_grouping'&&!o.assignedRouteId&&!(r.orders||[]).includes(o.id));
+  const dispatched=['sent_to_driver','accepted_by_driver','in_progress'].includes(r.status);
+  const options=avail.length?avail.map(o=>`<option value="${o.id}">${orderLabel(o)}</option>`).join(''):'<option value="">nenhum pedido disponível</option>';
+  const addBox=`<div class="addrow"><select id="add_${r.id}">${options}</select><button class="add" onclick="addOrder('${r.id}')" ${avail.length?'':'disabled style="opacity:.4;cursor:default"'}>+ adicionar</button></div>`;
+  return `<div class="editor">
+    <div class="et">Pedidos nesta rota — remova o errado e adicione o certo</div>
+    ${rows}
+    ${addBox}
+    ${dispatched?'<div class="warn">⚠ Esta rota já foi despachada. As alterações aparecem na tela do motoboy na próxima atualização.</div>':''}
+  </div>`;
+}
+async function removeOrder(routeId,orderId){
+  if(!confirm('Remover este pedido da rota? Ele volta para "aguardando agrupamento".'))return;
+  try{ const r=await api.removeOrderFromRoute(routeId,orderId); toast(r.routeDeleted?'Pedido removido — a rota ficou vazia e foi desfeita':'Pedido removido da rota'); if(r.routeDeleted)editing=null; await load(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+async function addOrder(routeId){
+  const sel=document.getElementById('add_'+routeId); const orderId=sel&&sel.value; if(!orderId){ toast('Nenhum pedido disponível'); return; }
+  try{ await api.addOrderToRoute(routeId,orderId); toast('Pedido adicionado à rota'); await load(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+function toggleEdit(id){ editing=editing===id?null:id; render(); }
 function setFilter(f){ filter=f; renderChips(); render(); }
 async function despachar(id){ try{ const r=await api.assignNext(id); toast('Despachada para '+(r.assignedTo||'o próximo')+'!'); load(); }catch(e){ toast('Erro: '+e.message); } }
 async function desfazer(id){ if(!confirm('Desfazer esta rota?'))return; try{ await api.delRoute(id); toast('Rota desfeita'); load(); }catch(e){ toast('Erro: '+e.message); } }
@@ -96,7 +136,7 @@ async function load(){
   if(!api.hasBackend){setConn('err');return;}
   try{
     const [rt,or_,cfg]=await Promise.all([api.allRoutes().catch(()=>[]),api.orders().catch(()=>[]),api.getSettings().catch(()=>({}))]);
-    routes=Array.isArray(rt)?rt:[]; orderMap={}; (Array.isArray(or_)?or_:[]).forEach(o=>orderMap[o.id]=o);
+    routes=Array.isArray(rt)?rt:[]; allOrders=Array.isArray(or_)?or_:[]; orderMap={}; allOrders.forEach(o=>orderMap[o.id]=o);
     auto=!!(cfg&&cfg.autoDispatch); document.getElementById('autoSw').classList.toggle('on',auto);
     setConn('live');
   }catch(e){ setConn('err'); }
