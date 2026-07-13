@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Financeiro</title>
+<style>
+  .mkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;}
+  .mkpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .mkpi .n{font-size:24px;font-weight:800;line-height:1;color:var(--green);} .mkpi .l{font-size:12px;color:var(--dim);margin-top:6px;} .mkpi .s{font-size:10.5px;color:var(--faint);margin-top:3px;}
+  .day{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:11px;overflow:hidden;}
+  .day .head{display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;}
+  .day .dt{font-size:14.5px;font-weight:800;} .day .sub{font-size:11.5px;color:var(--faint);}
+  .day .tot{margin-left:auto;text-align:right;} .day .tot .v{font-size:16px;font-weight:800;color:var(--green);} .day .tot .l{font-size:10px;color:var(--faint);}
+  .day .chev{color:var(--faint);transition:.2s;width:18px;height:18px;} .day.open .chev{transform:rotate(180deg);}
+  .day .body{display:none;padding:0 16px 12px;} .day.open .body{display:block;}
+  .drow{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line);}
+  .drow .av{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;font-size:12px;flex-shrink:0;}
+  .drow .nm{font-size:13px;font-weight:600;} .drow .ct{font-size:11px;color:var(--faint);}
+  .drow .vl{margin-left:auto;font-size:13.5px;font-weight:800;color:var(--green);}
+  .empty{color:var(--faint);font-size:13px;text-align:center;padding:24px;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:center"><div><h1>Financeiro</h1><p>Somatório das taxas de entrega a pagar aos motoboys, por dia.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <section class="mkpis" id="kpis"></section>
+  <div id="list"><div class="empty">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='financeiro';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn}=AudensShell;
+let days=[],open={};
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+const DIAS=['dom','seg','ter','qua','qui','sex','sáb'];
+function todayKey(){ return new Date().toLocaleDateString('en-CA'); }
+function keyMinus(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('en-CA'); }
+function fmtDay(k){
+  if(k===todayKey())return 'Hoje';
+  if(k===keyMinus(1))return 'Ontem';
+  const [y,m,d]=k.split('-'); const dt=new Date(Number(y),Number(m)-1,Number(d));
+  return `${d}/${m}/${y} · ${DIAS[dt.getDay()]}`;
+}
+function renderKPIs(){
+  const tk=todayKey(), d7=keyMinus(6), month=todayKey().slice(0,7);
+  const sum=(f)=>days.filter(f).reduce((s,x)=>s+x.total,0);
+  const hoje=sum(x=>x.day===tk), sem=sum(x=>x.day>=d7), mes=sum(x=>x.day.slice(0,7)===month);
+  const K=[['Hoje',hoje,''],['Últimos 7 dias',sem,''],['Este mês',mes,'']];
+  document.getElementById('kpis').innerHTML=K.map(k=>`<div class="mkpi"><div class="n">${money(k[1])}</div><div class="l">${k[0]}</div></div>`).join('');
+}
+function render(){
+  renderKPIs();
+  const box=document.getElementById('list');
+  if(!days.length){ box.innerHTML='<div class="empty">Nenhuma entrega registrada ainda.</div>'; return; }
+  box.innerHTML=days.map(d=>`
+    <div class="day ${open[d.day]?'open':''}">
+      <div class="head" onclick="toggle('${d.day}')">
+        <div><div class="dt">${fmtDay(d.day)}</div><div class="sub">${d.count} entrega${d.count===1?'':'s'} · ${d.byDriver.length} motoboy${d.byDriver.length===1?'':'s'}</div></div>
+        <div class="tot"><div class="v">${money(d.total)}</div><div class="l">a pagar</div></div>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="body">${d.byDriver.map(b=>`<div class="drow"><div class="av">${(b.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${b.name}</div><div class="ct">${b.count} entrega${b.count===1?'':'s'}</div></div><div class="vl">${money(b.total)}</div></div>`).join('')}</div>
+    </div>`).join('');
+}
+function toggle(day){ open[day]=!open[day]; render(); }
+async function load(){
+  if(!api.hasBackend){setConn('err');return;}
+  try{ days=await api.driverFees(); setConn('live'); }catch(e){ setConn('err'); days=[]; }
+  render();
+}
+load(); setInterval(load,15000);
+</script>
+</body>
+</html>
