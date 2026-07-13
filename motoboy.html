@@ -245,6 +245,7 @@ const api={
   history:(id)=>j(API+'/api/drivers/'+id+'/history'),
   settings:()=>j(API+'/api/settings'),
   accept:(id)=>j(API+'/api/routes/'+id+'/accept',{method:'POST'}),
+  decline:(id)=>j(API+'/api/routes/'+id+'/decline',{method:'POST'}),
   start:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
   complete:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
   finish:(id)=>j(API+'/api/routes/'+id+'/finish',{method:'POST'}),
@@ -348,7 +349,7 @@ async function accept(){ if(!route)return; try{await api.accept(route.id);toast(
 async function startRoute(){ if(!route)return; try{await api.start(route.id);toast('Boa entrega!');load();}catch(e){toast('Erro: '+e.message);} }
 async function deliver(orderId){ if(!route)return; try{const r=await api.complete(route.id,orderId);toast(r.allDone?'Rota concluída!':'Pedido entregue');load();}catch(e){toast('Erro: '+e.message);} }
 async function finishRoute(){ if(!route)return; if(!confirm('Marcar todos os pedidos como entregues e finalizar a rota?'))return; try{await api.finish(route.id);toast('Rota finalizada!');load();}catch(e){toast('Erro: '+e.message);} }
-function recusar(){ toast('Para recusar, fale com o operador (recusa direta em breve).'); }
+async function recusar(){ if(!route)return; if(!confirm('Recusar esta rota? Ela volta para o operador.'))return; try{ await api.decline(route.id); toast('Rota recusada — devolvida ao operador'); load(); }catch(e){ toast('Erro: '+e.message); } }
 function openMaps(){
   if(!route||!(route.orderDetails||[]).length){toast('Sem paradas');return;}
   const pts=route.orderDetails.map(o=>{const a=o.address||{};if(a.lat!=null&&a.lng!=null)return a.lat+','+a.lng;return encodeURIComponent([a.street,a.number,a.neighborhood,a.city].filter(Boolean).join(', '));});
