@@ -119,6 +119,7 @@ function renderSuggestions(){
   box.innerHTML=suggestions.map((s,i)=>`
     <div class="sug">
       <div class="h"><b>${s.neighborhood||'—'}</b><span class="tag">${s.orders.length} pedidos</span></div>
+      <div style="font-size:10.5px;color:var(--faint);margin:-2px 0 7px">${s.basis==='proximidade'?('por distância'+(s.maxKm!=null?` · até ${s.maxKm} km`:'')):'por bairro'}</div>
       <div class="ol">${s.orders.map(o=>`#${o.displayId} · ${o.storeName} · ${H.money(o.total)}`).join('<br>')}</div>
       <div class="foot"><span class="v">${H.money(s.totalValue)}</span><button class="mini g" onclick='approveSug(${i})'>Aprovar rota</button></div>
     </div>`).join('');
