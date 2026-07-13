@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Motoboys</title>
+<style>
+  .agstats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .agstat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:150px;}
+  .agstat .n{font-size:22px;font-weight:800;} .agstat .l{font-size:11.5px;color:var(--dim);margin-top:2px;}
+  .d-item{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--line);} .d-item:last-child{border-bottom:none;}
+  .d-av{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;flex-shrink:0;position:relative;}
+  .d-av .on{position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-radius:50%;border:2px solid var(--card);}
+  .on.g{background:var(--green);} .on.o{background:#4a4460;}
+  .d-item b{font-size:14px;} .d-item .sub{font-size:12px;color:var(--dim);}
+  .d-item .right{margin-left:auto;display:flex;align-items:center;gap:16px;}
+  .stbadge{font-size:11px;font-weight:700;border-radius:999px;padding:4px 11px;} .st-on{background:rgba(52,211,153,.16);color:var(--green);} .st-off{background:#221c38;color:var(--faint);} .st-route{background:rgba(34,211,238,.16);color:#22d3ee;}
+  .d-metric{text-align:center;} .d-metric .n{font-size:15px;font-weight:800;} .d-metric .l{font-size:10px;color:var(--faint);}
+  .qpos{width:26px;height:26px;border-radius:8px;background:var(--card2);display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--violet-3);flex-shrink:0;}
+  .hint{font-size:12.5px;color:var(--faint);}
+  .hint a{color:var(--violet-3);font-weight:700;text-decoration:none;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Motoboys</h1><p>Sua equipe de entrega: quem está online, a fila por ordem de chegada e as entregas do dia.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <section class="agstats" id="stats"></section>
+  <div class="grid2">
+    <main>
+      <div class="card-b">
+        <div style="display:flex;align-items:center;margin-bottom:6px"><b style="font-size:15px">Todos os motoboys</b></div>
+        <div id="list"></div>
+      </div>
+      <div class="card-b" style="margin-top:14px"><div class="hint">Para adicionar um motoboy, vá em <a href="usuarios.html">Usuários</a> e crie um login com acesso <b>Motoboy</b>. Ele aparece aqui e já entra direto na tela dele ao logar.</div></div>
+    </main>
+    <aside class="rail">
+      <div class="panel">
+        <div class="ph"><b>Fila de motoboys</b></div>
+        <div id="queue"><div class="panel-empty">Carregando…</div></div>
+      </div>
+    </aside>
+  </div>
+</template>
+
+<script>window.PAGE='motoboys';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+let drivers=[],queue=[];
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+function statusInfo(d){
+  if(d.activeRouteId) return ['st-route','Em rota'];
+  if(d.online) return ['st-on','Online'];
+  return ['st-off','Offline'];
+}
+function renderStats(){
+  const online=drivers.filter(d=>d.online).length;
+  const emRota=drivers.filter(d=>d.activeRouteId).length;
+  const entregas=drivers.reduce((s,d)=>s+(d.todayDeliveries||0),0);
+  document.getElementById('stats').innerHTML=`
+    <div class="agstat"><div class="n">${drivers.length}</div><div class="l">Motoboys cadastrados</div></div>
+    <div class="agstat"><div class="n">${online}</div><div class="l">Online agora</div></div>
+    <div class="agstat"><div class="n">${emRota}</div><div class="l">Em rota</div></div>
+    <div class="agstat"><div class="n">${entregas}</div><div class="l">Entregas hoje</div></div>`;
+}
+function renderList(){
+  const box=document.getElementById('list');
+  if(!drivers.length){ box.innerHTML=`<div style="text-align:center;color:var(--faint);padding:20px">Nenhum motoboy cadastrado.<br><span style="font-size:12px">Crie um em <a href="usuarios.html" style="color:var(--violet-3)">Usuários</a> com acesso Motoboy.</span></div>`; return; }
+  box.innerHTML=drivers.map(d=>{
+    const [cls,txt]=statusInfo(d);
+    return `<div class="d-item">
+      <div class="d-av">${(d.name||'?').trim().charAt(0).toUpperCase()}<span class="on ${d.online?'g':'o'}"></span></div>
+      <div><b>${d.name||''}</b><div class="sub">${d.email||d.phone||'—'}</div></div>
+      <div class="right">
+        <div class="d-metric"><div class="n">${d.todayDeliveries||0}</div><div class="l">entregas hoje</div></div>
+        <span class="stbadge ${cls}">${txt}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderQueue(){
+  const box=document.getElementById('queue');
+  if(!queue.length){ box.innerHTML=`<div class="panel-empty">Nenhum motoboy online<small>eles entram na fila ao ficar online no app</small></div>`; return; }
+  box.innerHTML=queue.map((d,i)=>`<div class="q"><span class="qpos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${d.name||''}</div><div style="font-size:10.5px;color:var(--faint)">disponível</div></div></div>`).join('');
+}
+async function load(){
+  if(!api.hasBackend){setConn('err');return;}
+  try{
+    const [ds,q]=await Promise.all([api.drivers().catch(()=>[]),api.driverQueue().catch(()=>[])]);
+    drivers=Array.isArray(ds)?ds:[]; queue=Array.isArray(q)?q:[]; setConn('live');
+  }catch(e){ setConn('err'); }
+  renderStats(); renderList(); renderQueue();
+}
+load(); setInterval(load,7000);
+</script>
+</body>
+</html>
