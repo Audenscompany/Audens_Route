@@ -27,6 +27,12 @@
 <template id="page">
   <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Motoboys</h1><p>Sua equipe de entrega: quem está online, a fila por ordem de chegada e as entregas do dia.</p></div>
     <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <div class="card-b" style="margin-bottom:16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+    <div class="field" style="min-width:200px"><label>Valor pago ao motoboy por entrega</label>
+      <div style="display:flex;align-items:center;gap:8px"><span style="color:var(--dim)">R$</span><input id="feeInput" type="number" step="0.50" min="0" style="max-width:120px" placeholder="5,00" /></div></div>
+    <button class="btn primary" id="saveFee">Salvar valor</button>
+    <div class="hint" style="flex-basis:100%;margin-top:2px">Esse valor multiplica as entregas do dia de cada motoboy para mostrar quanto ele vai receber (aparece na Carteira dele).</div>
+  </div>
   <section class="agstats" id="stats"></section>
   <div class="grid2">
     <main>
@@ -87,14 +93,21 @@ function renderQueue(){
   if(!queue.length){ box.innerHTML=`<div class="panel-empty">Nenhum motoboy online<small>eles entram na fila ao ficar online no app</small></div>`; return; }
   box.innerHTML=queue.map((d,i)=>`<div class="q"><span class="qpos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${d.name||''}</div><div style="font-size:10.5px;color:var(--faint)">disponível</div></div></div>`).join('');
 }
+async function saveFee(){
+  const v=parseFloat(document.getElementById('feeInput').value);
+  if(isNaN(v)||v<0){toast('Digite um valor válido');return;}
+  try{ await api.patchSettings({deliveryFeePerOrder:v}); toast('Valor por entrega salvo'); }catch(e){ toast('Erro: '+e.message); }
+}
 async function load(){
   if(!api.hasBackend){setConn('err');return;}
   try{
-    const [ds,q]=await Promise.all([api.drivers().catch(()=>[]),api.driverQueue().catch(()=>[])]);
+    const [ds,q,cfg]=await Promise.all([api.drivers().catch(()=>[]),api.driverQueue().catch(()=>[]),api.getSettings().catch(()=>({}))]);
     drivers=Array.isArray(ds)?ds:[]; queue=Array.isArray(q)?q:[]; setConn('live');
+    const fi=document.getElementById('feeInput'); if(fi&&document.activeElement!==fi) fi.value=(cfg&&cfg.deliveryFeePerOrder!=null)?cfg.deliveryFeePerOrder:5;
   }catch(e){ setConn('err'); }
   renderStats(); renderList(); renderQueue();
 }
+document.getElementById('saveFee').onclick=saveFee;
 load(); setInterval(load,7000);
 </script>
 </body>

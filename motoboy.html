@@ -73,6 +73,10 @@
   .hist .rgt{margin-left:auto;text-align:right;} .hist .st{font-size:11.5px;color:var(--green);font-weight:700;} .hist .tm{font-size:10.5px;color:var(--faint);} .hist .vl{font-size:12.5px;font-weight:800;color:var(--violet3);}
   .tabbar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:rgba(14,10,26,.92);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
   .tabbar .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:10.5px;font-weight:600;cursor:pointer;padding:6px 0;} .tabbar .tab svg{width:22px;height:22px;} .tabbar .tab.on{color:var(--violet3);}
+  .wbadge{margin-left:auto;font-size:14px;font-weight:800;color:var(--green);background:rgba(52,211,153,.14);border-radius:999px;padding:6px 14px;}
+  .wallet{display:flex;gap:10px;}
+  .wallet .wc{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:14px 12px;text-align:center;} .wallet .wc.grow{background:linear-gradient(135deg,rgba(52,211,153,.12),var(--card2));border-color:rgba(52,211,153,.3);}
+  .wallet .n{font-size:19px;font-weight:800;line-height:1.1;} .wallet .l{font-size:10.5px;color:var(--faint);margin-top:4px;}
   .empty{color:var(--faint);font-size:13px;text-align:center;padding:22px 8px;}
   .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:80;max-width:88%;text-align:center;} .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
   .conn{font-size:11px;color:var(--faint);text-align:center;padding:4px;}
@@ -142,6 +146,15 @@
     </div>
   </div>
 
+  <div class="card" id="walletCard">
+    <div class="sec-h"><b>Ganhos do dia</b><span class="wbadge" id="wEarn">R$ 0,00</span></div>
+    <div class="wallet">
+      <div class="wc"><div class="n" id="wCount">0</div><div class="l">entregas hoje</div></div>
+      <div class="wc"><div class="n" id="wFee">R$ 0,00</div><div class="l">por entrega</div></div>
+      <div class="wc grow"><div class="n" id="wTotal" style="color:var(--green)">R$ 0,00</div><div class="l">a receber</div></div>
+    </div>
+  </div>
+
   <div class="card hist">
     <div class="sec-h"><b>Histórico do dia</b><a class="badge" style="margin-left:auto;color:var(--violet3)" href="javascript:void(0)" onclick="toast('Histórico completo em breve')">Ver todos</a></div>
     <div id="history"><div class="empty">Nenhuma entrega hoje ainda.</div></div>
@@ -153,7 +166,7 @@
   <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Painel</div>
   <div class="tab" onclick="toast('Em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>Entregas</div>
   <div class="tab" onclick="document.querySelector('.hist').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Histórico</div>
-  <div class="tab" onclick="toast('Carteira em breve')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M16 14h2"/></svg>Carteira</div>
+  <div class="tab" onclick="document.getElementById('walletCard').scrollIntoView({behavior:'smooth'})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M16 14h2"/></svg>Carteira</div>
   <div class="tab" onclick="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>Perfil</div>
 </div>
 
@@ -169,6 +182,7 @@ const api={
   setStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
   route:(id)=>j(API+'/api/drivers/'+id+'/route'),
   history:(id)=>j(API+'/api/drivers/'+id+'/history'),
+  settings:()=>j(API+'/api/settings'),
   accept:(id)=>j(API+'/api/routes/'+id+'/accept',{method:'POST'}),
   start:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
   complete:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
@@ -179,7 +193,8 @@ const hhmm=(iso)=>{if(!iso)return '';const d=new Date(iso);return String(d.getHo
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
 function logout(){try{sessionStorage.removeItem('audens_role');sessionStorage.removeItem('audens_email');}catch(e){}location.href='index.html';}
 
-let driver=null, route=null;
+let driver=null, route=null, fee=5;
+function isToday(iso){ if(!iso)return false; const d=new Date(iso), n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
 
 async function resolveDriver(){
   let email=''; try{email=sessionStorage.getItem('audens_email')||'';}catch(e){}
@@ -237,7 +252,7 @@ function renderRoute(){
   const tot=ods.reduce((s,o)=>s+(Number(o.total)||0),0);
   document.getElementById('sPed').textContent=n+(n===1?' pedido':' pedidos');
   document.getElementById('sPedV').textContent=money(tot);
-  document.getElementById('sFee').textContent=money(tot*0.12);
+  document.getElementById('sFee').textContent=money(n*fee);
   document.getElementById('sRate').textContent=(driver&&driver.acceptanceRate!=null)?driver.acceptanceRate+'%':'100%';
   document.getElementById('mainActs').innerHTML=mainActsHTML(route.status);
 }
@@ -264,14 +279,23 @@ function renderHistory(list){
       <div class="rgt"><div class="st">Entregue</div><div class="tm">${hhmm(o.deliveredAt||o.updatedAt)}</div><div class="vl">${money(o.total)}</div></div></div>`;
   }).join('');
 }
+function renderWallet(history){
+  const hoje=(history||[]).filter(o=>isToday(o.deliveredAt||o.updatedAt));
+  const count=hoje.length, total=count*fee;
+  document.getElementById('wCount').textContent=count;
+  document.getElementById('wFee').textContent=money(fee);
+  document.getElementById('wTotal').textContent=money(total);
+  document.getElementById('wEarn').textContent=money(total);
+}
 async function load(){
   if(!API){document.getElementById('conn').textContent='Configure a API (config.js).';return;}
   if(!driver){ driver=await resolveDriver(); if(!driver){document.getElementById('conn').textContent='Nenhum motoboy vinculado a este acesso. Cadastre em Usuários.';return;} }
   renderStatus();
   try{
-    const [q,r,h]=await Promise.all([api.queue().catch(()=>[]),api.route(driver.id).catch(()=>null),api.history(driver.id).catch(()=>[])]);
+    const [q,r,h,cfg]=await Promise.all([api.queue().catch(()=>[]),api.route(driver.id).catch(()=>null),api.history(driver.id).catch(()=>[]),api.settings().catch(()=>({}))]);
+    fee=Number(cfg&&cfg.deliveryFeePerOrder)||5;
     document.getElementById('queueN').textContent=(q&&q.length)||0;
-    route=r; renderRoute(); renderHistory(h);
+    route=r; renderRoute(); renderWallet(h); renderHistory(h);
     document.getElementById('conn').textContent='Atualizado '+hhmm(new Date().toISOString());
   }catch(e){ document.getElementById('conn').textContent='Sem conexão com o servidor.'; }
 }
