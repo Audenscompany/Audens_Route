@@ -131,6 +131,8 @@
     startRoute:(id)=>j(API+'/api/routes/'+id+'/start',{method:'POST'}),
     completeOrder:(id,orderId)=>j(API+'/api/routes/'+id+'/complete-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
     finishRoute:(id)=>j(API+'/api/routes/'+id+'/finish',{method:'POST'}),
+    removeOrderFromRoute:(id,orderId)=>j(API+'/api/routes/'+id+'/remove-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
+    addOrderToRoute:(id,orderId)=>j(API+'/api/routes/'+id+'/add-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId})}),
     getSettings:()=>j(API+'/api/settings'),
     patchSettings:(b)=>j(API+'/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
     driverFees:()=>j(API+'/api/finance/driver-fees'),
