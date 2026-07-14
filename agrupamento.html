@@ -61,6 +61,13 @@
   .qab .qi{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;} .qab .qi svg{width:16px;height:16px;} .qab .qt2{font-size:12.5px;font-weight:800;} .qab .qs{font-size:10.5px;color:var(--faint);}
   .qab .badge{position:absolute;}
   .empty{color:var(--faint);font-size:12.5px;text-align:center;padding:22px;}
+  .sw{width:40px;height:23px;border-radius:999px;background:#3a3f4b;position:relative;transition:.2s;flex-shrink:0;} .sw::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.2s;} .sw.on{background:var(--green);} .sw.on::after{left:19px;}
+  .lone{background:rgba(245,181,68,.09);border:1px solid rgba(245,181,68,.3);border-radius:12px;padding:11px 13px;margin-bottom:12px;}
+  .lone .lh{font-size:12px;font-weight:800;color:var(--amber);display:flex;align-items:center;gap:7px;margin-bottom:8px;} .lone .lh svg{width:15px;height:15px;}
+  .lone .li{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid rgba(245,181,68,.18);flex-wrap:wrap;} .lone .li:first-of-type{border-top:none;}
+  .lone .li .txt{font-size:12px;} .lone .li .txt b{color:var(--text);}
+  .lone .li .acts{margin-left:auto;display:flex;gap:6px;}
+  .lone .lb{border:1px solid var(--line);background:var(--card2);color:var(--dim);border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:700;cursor:pointer;} .lone .lb.g{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;} .lone .lb:hover{border-color:var(--violet);}
 </style>
 </head>
 <body>
@@ -72,6 +79,7 @@
         <div class="agk"><div><div class="t">Pedidos prontos</div><div class="n" id="kPed">0</div></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></div></div>
         <div class="agk"><div><div class="t">Rotas sugeridas</div><div class="n" id="kSug">0</div></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H14a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8h4.4"/></svg></div></div>
         <div class="agk"><div><div class="t">Motoboys na fila</div><div class="n" id="kFila">0</div></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/></svg></div></div>
+        <div class="agk" style="min-width:0;gap:9px;cursor:pointer" onclick="toggleAuto()" title="Quando ligado, o sistema agrupa sozinho após a janela"><div><div class="t">Agrupamento automático</div><div style="font-size:11px;font-weight:800;margin-top:3px" id="autoTxt">Desligado</div></div><div class="sw" id="autoSw"></div></div>
         <button class="btn2 g" onclick="load()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>Atualizar dados</button>
       </div>
       <div class="ag-upd" id="upd"></div>
@@ -83,6 +91,7 @@
     <div class="col">
       <div class="col-h"><b>Pedidos prontos</b><span class="ct" id="c1">0</span></div>
       <p class="col-sub">Selecione 2–3 pedidos para agrupar, ou use as sugestões ao lado.</p>
+      <div id="loneAlerts"></div>
       <div id="pool"></div>
       <div class="pool-foot" id="poolFoot" style="display:none">
         <div class="info"><b id="selN">0</b> selecionado(s) <span id="spread" style="color:var(--faint)"></span></div>
@@ -126,6 +135,7 @@ const {api,H,setConn,toast,API}=AudensShell;
 let stores=[],storeMap={},allOrders=[],pool=[],routes=[],suggestions=[],drivers=[],queue=[];
 let selected=new Set(),min=2,max=3,raioKm=2;
 let priority=new Set(),held=new Set(),rejected=new Set(),drvOverride={};
+let autoGroup=false,loneList=[],loneDismissed=new Set();
 
 const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
 function minsSince(iso){ if(!iso)return 0; return Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/60000)); }
@@ -345,8 +355,24 @@ function trocarMotoboy(i){
 function rejeitarSug(i){ const s=visibleSugs()[i]; if(!s)return; rejected.add(s.orderIds.join(',')); renderSuggestions(); renderKPIs(); toast('Sugestão descartada'); }
 async function recalcAll(){ rejected.clear(); drvOverride={}; try{ suggestions=await api.routeSuggestions(); }catch(e){ suggestions=[]; } renderSuggestions(); renderKPIs(); toast('Sugestões recalculadas'); }
 function otimizarFila(){ load(); toast('Fila reordenada por chegada'); }
+async function toggleAuto(){ autoGroup=!autoGroup; renderAutoSw(); try{ await api.patchSettings({autoGroup}); toast(autoGroup?'Agrupamento automático LIGADO':'Agrupamento automático desligado'); if(autoGroup)load(); }catch(e){ autoGroup=!autoGroup; renderAutoSw(); toast('Erro ao salvar'); } }
+function renderAutoSw(){ const sw=document.getElementById('autoSw'),tx=document.getElementById('autoTxt'); if(sw)sw.classList.toggle('on',autoGroup); if(tx){tx.textContent=autoGroup?'Ligado':'Desligado';tx.style.color=autoGroup?'var(--green)':'var(--faint)';} }
+function renderLone(){
+  const box=document.getElementById('loneAlerts'); if(!box)return;
+  const list=loneList.filter(l=>!loneDismissed.has(l.id));
+  if(!list.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="lone"><div class="lh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>Pedido(s) esperando há muito tempo sem formar lote</div>`
+    + list.map(l=>`<div class="li"><span class="txt"><b>#${l.displayId}</b> · ${l.neighborhood||'—'} · pronto há <b>${l.waitedMin} min</b></span><span class="acts"><button class="lb g" onclick="soloRoute('${l.id}')">Forçar 1</button><button class="lb" onclick="togPri('${l.id}')">Priorizar</button><button class="lb" onclick="dismissLone('${l.id}')">Aguardar</button></span></div>`).join('')
+    + `</div>`;
+}
+function dismissLone(id){ loneDismissed.add(id); renderLone(); }
+async function runTick(){
+  try{ const r=await api.groupingTick(); loneList=Array.isArray(r.lone)?r.lone:[]; if(r.created&&r.created.length){ toast(r.created.length+' rota(s) agrupada(s) automaticamente'); } }
+  catch(e){ /* silencioso */ }
+  renderLone();
+}
 async function pauseDrv(id){ const d=drivers.find(x=>x.id===id); if(!confirm('Colocar '+(d?d.name:'o motoboy')+' offline (sair da fila)?'))return; try{ await api.setDriverStatus(id,false); toast('Motoboy pausado (offline)'); await load(); }catch(e){ toast('Erro: '+e.message); } }
-function locateDrv(id){ const d=drivers.find(x=>x.id===id); if(d&&d.lastLat!=null&&d.lastLng!=null){ window.open('https://www.google.com/maps/search/?api=1&query='+d.lastLat+','+d.lastLng,'_blank'); } else toast('Sem localização recente deste motoboy'); }
+function locateDrv(id){ const d=drivers.find(x=>x.id===id); const c=d&&d.currentLocation; if(c&&c.lat!=null&&c.lng!=null){ window.open('https://www.google.com/maps/search/?api=1&query='+c.lat+','+c.lng,'_blank'); } else toast('Sem localização recente deste motoboy'); }
 
 /* ---------------- load ---------------- */
 async function load(){
@@ -359,12 +385,13 @@ async function load(){
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
     allOrders=Array.isArray(or_)?or_:[]; routes=Array.isArray(rt)?rt:[];
     drivers=Array.isArray(dr)?dr:[]; queue=Array.isArray(qz)?qz:[]; suggestions=Array.isArray(sug)?sug:[];
-    const cf=cfg||{}; min=cf.minOrdersPerRoute||2; max=cf.maxOrdersPerRoute||3; raioKm=Number(cf.maxDistanceBetweenGroupedOrdersKm)||2;
+    const cf=cfg||{}; min=cf.minOrdersPerRoute||2; max=cf.maxOrdersPerRoute||3; raioKm=Number(cf.maxDistanceBetweenGroupedOrdersKm)||2; autoGroup=!!cf.autoGroup;
     pool=allOrders.filter(o=>o.status==='waiting_grouping'&&!o.assignedRouteId); resortPool();
     const poolIds=new Set(pool.map(o=>o.id)); [...selected].forEach(id=>{ if(!poolIds.has(id))selected.delete(id); });
     setConn('live');
   }catch(e){ setConn('err'); }
-  renderKPIs(); renderPool(); renderSuggestions(); renderQueue();
+  renderAutoSw(); renderKPIs(); renderPool(); renderSuggestions(); renderQueue();
+  await runTick();
 }
 load(); setInterval(load,8000);
 </script>
