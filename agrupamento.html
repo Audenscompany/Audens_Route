@@ -7,68 +7,114 @@
 <link rel="stylesheet" href="styles.css" />
 <title>Audens Route — Agrupamento</title>
 <style>
-  .agstats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
-  .agstat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;min-width:150px;}
-  .agstat .n{font-size:22px;font-weight:800;} .agstat .l{font-size:11.5px;color:var(--dim);margin-top:2px;}
-  .selbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;margin-bottom:14px;flex-wrap:wrap;}
-  .selbar .info{font-size:12.5px;color:var(--dim);} .selbar .info b{color:var(--text);}
-  .selbar .rule{font-size:11px;color:var(--faint);} .selbar .sp{margin-left:auto;}
-  .selbar .btn.dis{opacity:.4;pointer-events:none;}
-  .gwrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(188px,1fr));gap:11px;}
-  .gc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px;cursor:pointer;transition:.12s;user-select:none;}
-  .gc:hover{border-color:var(--violet);} .gc.on{border-color:var(--violet);box-shadow:0 0 0 2px rgba(139,92,246,.35);background:#181233;}
-  .gc .chk{position:absolute;top:9px;right:9px;width:19px;height:19px;border-radius:6px;border:1.6px solid var(--line);display:grid;place-items:center;color:transparent;}
-  .gc.on .chk{background:var(--violet);border-color:var(--violet);color:#fff;}
-  .gc .chk svg{width:12px;height:12px;}
-  .gc .r1{display:flex;align-items:center;gap:8px;padding-right:22px;}
-  .gc .lg{width:26px;height:26px;border-radius:7px;overflow:hidden;flex-shrink:0;} .gc .lg img{width:100%;height:100%;object-fit:cover;}
-  .gc .oid{font-size:12px;font-weight:800;} .gc .store{font-size:10.5px;color:var(--dim);}
-  .gc .bairro{font-size:12px;color:var(--dim);margin:8px 0 6px;} .gc .r2{display:flex;justify-content:space-between;align-items:center;}
-  .gc .tm{font-size:10.5px;color:var(--faint);} .gc .val{font-size:12px;font-weight:800;}
-  .sug{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:11px;background:var(--bg);}
-  .sug .h{display:flex;align-items:center;gap:8px;margin-bottom:7px;} .sug .h b{font-size:12.5px;} .sug .h .tag{font-size:10px;color:var(--violet-3);background:rgba(139,92,246,.14);border-radius:999px;padding:2px 8px;font-weight:700;}
-  .sug .ol{font-size:11.5px;color:var(--dim);line-height:1.5;margin-bottom:9px;}
-  .sug .foot{display:flex;align-items:center;gap:8px;} .sug .foot .v{font-size:12px;font-weight:800;margin-right:auto;}
-  .rt{border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:11px;}
-  .rt .h{display:flex;align-items:center;gap:8px;margin-bottom:7px;} .rt .h b{font-size:12.5px;}
-  .rt .h .badge{font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px;} .badge.ok{color:var(--green);background:rgba(52,211,153,.14);} .badge.exc{color:var(--amber);background:rgba(251,191,36,.14);}
-  .rt .ol{font-size:11.5px;color:var(--dim);line-height:1.5;margin-bottom:9px;} .rt .ol .pill{display:inline-block;background:var(--card2);border-radius:6px;padding:1px 7px;margin:2px 3px 0 0;font-size:11px;}
-  .rt .foot{display:flex;align-items:center;gap:10px;} .rt .foot .v{font-size:12.5px;font-weight:800;margin-right:auto;}
-  .mini{border:1px solid var(--line);background:var(--card2);color:var(--text);border-radius:8px;padding:6px 11px;font-size:11.5px;font-weight:700;cursor:pointer;}
-  .mini.g{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;} .mini.d{color:var(--faint);background:none;border:none;} .mini.d:hover{color:var(--red);}
-  .mini.warn{color:var(--amber);background:rgba(251,191,36,.1);border-color:transparent;}
-  .btn.exc{background:rgba(251,191,36,.12);border-color:transparent;color:var(--amber);}
+  .ag-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .ag-kpis{display:flex;gap:12px;margin-left:auto;align-items:center;flex-wrap:wrap;}
+  .agk{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 16px;display:flex;align-items:center;gap:12px;min-width:150px;}
+  .agk .t{font-size:11px;color:var(--dim);} .agk .n{font-size:22px;font-weight:800;line-height:1;margin-top:3px;}
+  .agk .ic{width:34px;height:34px;border-radius:10px;background:rgba(139,92,246,.16);color:var(--violet3);display:grid;place-items:center;margin-left:auto;} .agk .ic svg{width:17px;height:17px;}
+  .ag-upd{font-size:11px;color:var(--faint);text-align:right;margin-top:6px;}
+  .cols{display:grid;grid-template-columns:1.15fr 1.2fr .82fr;gap:16px;align-items:start;}
+  @media(max-width:1200px){.cols{grid-template-columns:1fr 1fr;}}
+  @media(max-width:820px){.cols{grid-template-columns:1fr;}}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;}
+  .col-h{display:flex;align-items:center;gap:9px;margin-bottom:4px;} .col-h b{font-size:15px;} .col-h .ct{font-size:11px;font-weight:800;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--dim);} .col-h .on{margin-left:auto;font-size:11px;color:var(--green);display:flex;align-items:center;gap:5px;} .col-h .on .d{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .col-sub{font-size:11.5px;color:var(--faint);margin:0 0 14px;}
+
+  /* tabela pedidos */
+  table.pt{width:100%;border-collapse:collapse;}
+  table.pt th{font-size:10px;color:var(--faint);font-weight:700;text-align:left;padding:7px 6px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);}
+  table.pt td{padding:9px 6px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle;}
+  table.pt tr.sel td{background:rgba(139,92,246,.08);}
+  .cbx{width:18px;height:18px;border-radius:5px;border:1.6px solid var(--line);display:grid;place-items:center;color:transparent;cursor:pointer;} .cbx.on{background:var(--violet);border-color:var(--violet);color:#fff;} .cbx svg{width:11px;height:11px;}
+  .oidc{font-weight:800;color:var(--violet3);} .oval{font-size:10.5px;color:var(--faint);}
+  .risk{font-size:10.5px;font-weight:800;border-radius:6px;padding:3px 8px;display:inline-block;}
+  .risk.baixo{color:var(--green);background:rgba(52,211,153,.14);} .risk.medio{color:var(--amber);background:rgba(245,181,68,.14);} .risk.alto{color:var(--red);background:rgba(242,84,91,.14);}
+  .actq{display:flex;gap:5px;} .actq button{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--card2);color:var(--faint);display:grid;place-items:center;cursor:pointer;} .actq button:hover{border-color:var(--violet);color:var(--violet3);} .actq button.on{color:var(--amber);border-color:var(--amber);} .actq svg{width:13px;height:13px;}
+  .pool-foot{display:flex;align-items:center;gap:10px;margin-top:13px;flex-wrap:wrap;}
+  .pool-foot .info{font-size:12px;color:var(--dim);} .pool-foot .info b{color:var(--text);}
+  .btn2{border:none;border-radius:10px;padding:10px 15px;font-size:12.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:7px;}
+  .btn2.g{background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;} .btn2.g:disabled{opacity:.4;cursor:default;} .btn2.ghost{background:var(--card2);border:1px solid var(--line);color:var(--dim);}
+
+  /* sugestões */
+  .sug{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:13px;background:var(--card2);}
+  .sug .sh{display:flex;align-items:center;gap:9px;margin-bottom:11px;} .sug .sh b{font-size:13.5px;} .sug .sh .rec{font-size:9.5px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c3aed,#a855f7);border-radius:999px;padding:3px 9px;}
+  .sug .body{display:grid;grid-template-columns:1fr 150px;gap:13px;} @media(max-width:520px){.sug .body{grid-template-columns:1fr;}}
+  .sug .lbl{font-size:10px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px;}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px;} .chips .c{font-size:11px;font-weight:700;background:var(--card);border:1px solid var(--line);border-radius:7px;padding:3px 8px;}
+  .moto{display:flex;align-items:center;gap:9px;margin-bottom:11px;} .moto .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;font-size:12px;overflow:hidden;} .moto .av img{width:100%;height:100%;object-fit:cover;} .moto .nm{font-size:12.5px;font-weight:800;} .moto .rt{font-size:10.5px;color:var(--amber);}
+  .metrics{display:flex;gap:14px;margin-bottom:12px;} .metric .mv{font-size:14px;font-weight:800;} .metric .ml{font-size:10px;color:var(--faint);}
+  .smap{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);background:#0d0a18;display:block;}
+  .sug-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;}
+  .sb{border:1px solid var(--line);background:var(--card);color:var(--dim);border-radius:9px;padding:8px 11px;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;} .sb:hover{border-color:var(--violet);color:var(--text);} .sb svg{width:13px;height:13px;}
+  .sb.g{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;} .sb.dg{color:var(--red);} .sb.dg:hover{border-color:var(--red);color:var(--red);}
+
+  /* fila */
+  table.qt{width:100%;border-collapse:collapse;}
+  table.qt th{font-size:10px;color:var(--faint);font-weight:700;text-align:left;padding:7px 5px;border-bottom:1px solid var(--line);text-transform:uppercase;}
+  table.qt td{padding:9px 5px;border-bottom:1px solid var(--line);font-size:12px;}
+  .qpos{width:22px;height:22px;border-radius:7px;background:var(--card2);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:11px;}
+  .qname{display:flex;align-items:center;gap:8px;} .qav{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;font-size:11px;overflow:hidden;flex-shrink:0;} .qav img{width:100%;height:100%;object-fit:cover;}
+  .qwait{font-weight:800;} .qwait.w0{color:var(--green);} .qwait.w1{color:var(--amber);} .qwait.w2{color:var(--red);}
+  .verlink{text-align:center;margin-top:12px;} .verlink a{color:var(--violet3);font-size:12px;font-weight:700;text-decoration:none;} .verlink a:hover{text-decoration:underline;}
+  .qa{margin-top:16px;} .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .qab{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:13px;cursor:pointer;text-align:left;color:var(--text);display:flex;flex-direction:column;gap:6px;transition:border-color .15s;} .qab:hover{border-color:var(--violet);}
+  .qab .qi{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;} .qab .qi svg{width:16px;height:16px;} .qab .qt2{font-size:12.5px;font-weight:800;} .qab .qs{font-size:10.5px;color:var(--faint);}
+  .qab .badge{position:absolute;}
+  .empty{color:var(--faint);font-size:12.5px;text-align:center;padding:22px;}
 </style>
 </head>
 <body>
 <template id="page">
-  <div class="page-head" style="display:flex;align-items:flex-start">
-    <div><h1>Agrupamento</h1><p>Junte 2 a 3 pedidos prontos numa rota. O sistema sugere por bairro; você aprova.</p></div>
-    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button>
+  <div class="ag-head">
+    <div><h1 style="margin:0">Agrupamento e sugestões de rota</h1><p style="margin:5px 0 0;color:var(--dim);font-size:13px">Gerencie pedidos prontos, sugestões inteligentes e a fila de motoboys.</p></div>
+    <div>
+      <div class="ag-kpis">
+        <div class="agk"><div><div class="t">Pedidos prontos</div><div class="n" id="kPed">0</div></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></div></div>
+        <div class="agk"><div><div class="t">Rotas sugeridas</div><div class="n" id="kSug">0</div></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="5" r="2.2"/><path d="M8.2 19H14a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8h4.4"/></svg></div></div>
+        <div class="agk"><div><div class="t">Motoboys na fila</div><div class="n" id="kFila">0</div></div><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c0-3 2.5-4.5 5.5-4.5s5.5 1.5 5.5 4.5"/></svg></div></div>
+        <button class="btn2 g" onclick="load()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>Atualizar dados</button>
+      </div>
+      <div class="ag-upd" id="upd"></div>
+    </div>
   </div>
-  <section class="agstats" id="stats"></section>
-  <div class="grid2">
-    <main>
-      <div class="selbar">
-        <div class="info"><b id="selN">0</b> selecionado(s)</div>
-        <div class="rule">mín. <b id="minR">2</b> · máx. <b id="maxR">3</b> por rota</div>
-        <div class="rule" id="spread"></div>
-        <div class="sp"></div>
-        <button class="btn exc" id="forceBtn" style="display:none" onclick="createRoute(true)">Forçar 1 (exceção)</button>
-        <button class="btn primary dis" id="makeBtn" onclick="createRoute(false)">Criar rota</button>
-      </div>
+
+  <div class="cols">
+    <!-- COLUNA 1 -->
+    <div class="col">
+      <div class="col-h"><b>Pedidos prontos</b><span class="ct" id="c1">0</span></div>
+      <p class="col-sub">Selecione 2–3 pedidos para agrupar, ou use as sugestões ao lado.</p>
       <div id="pool"></div>
-    </main>
-    <aside class="rail">
-      <div class="panel">
-        <div class="ph"><b>Sugestões automáticas</b><a href="javascript:void(0)" onclick="loadSuggestions()">gerar</a></div>
-        <div id="suggestions"><div class="panel-empty">Carregando…</div></div>
+      <div class="pool-foot" id="poolFoot" style="display:none">
+        <div class="info"><b id="selN">0</b> selecionado(s) <span id="spread" style="color:var(--faint)"></span></div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn2 ghost" id="forceBtn" style="display:none" onclick="createRoute(true)">Forçar 1 (exceção)</button>
+          <button class="btn2 g" id="makeBtn" disabled onclick="createRoute(false)">Criar rota</button>
+        </div>
       </div>
-      <div class="panel">
-        <div class="ph"><b>Rotas montadas</b></div>
-        <div id="routes"><div class="panel-empty">Carregando…</div></div>
+    </div>
+
+    <!-- COLUNA 2 -->
+    <div class="col">
+      <div class="col-h"><b>Sugestões de rota</b><span class="ct" id="c2">0</span></div>
+      <p class="col-sub">Rotas geradas por proximidade, otimizadas por distância e risco.</p>
+      <div id="suggestions"></div>
+    </div>
+
+    <!-- COLUNA 3 -->
+    <div class="col">
+      <div class="col-h"><b>Fila de motoboys</b><span class="on"><span class="d"></span><span id="c3">0</span> online</span></div>
+      <div id="queue"></div>
+      <div class="verlink"><a href="motoboys.html">Ver fila completa ›</a></div>
+      <div class="qa">
+        <div class="col-h" style="margin-bottom:11px"><b>Ações rápidas</b></div>
+        <div class="qa-grid">
+          <button class="qab" onclick="recalcAll()"><span class="qi" style="background:rgba(139,92,246,.16);color:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg></span><div class="qt2">Recalcular todas</div><div class="qs">Regera as sugestões</div></button>
+          <button class="qab" onclick="otimizarFila()"><span class="qi" style="background:rgba(34,211,238,.16);color:#22d3ee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h11M4 12h7M4 17h13"/><path d="m17 5 3 2-3 2M14 15l3 2-3 2"/></svg></span><div class="qt2">Otimizar fila</div><div class="qs">Reordena por chegada</div></button>
+          <button class="qab" onclick="location.href='dashboard.html'"><span class="qi" style="background:rgba(242,84,91,.16);color:#f2545b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg></span><div class="qt2">Alertas de risco <span id="riskCount" style="color:var(--red)"></span></div><div class="qs">Pedidos com risco alto</div></button>
+          <button class="qab" onclick="location.href='configuracoes.html'"><span class="qi" style="background:rgba(168,85,247,.16);color:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L16 3H8l-.4 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L8 21h8l.4-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5Z"/></svg></span><div class="qt2">Configurações</div><div class="qs">Ajustes de agrupamento</div></button>
+        </div>
       </div>
-    </aside>
+    </div>
   </div>
 </template>
 
@@ -76,129 +122,249 @@
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script src="app.js"></script>
 <script>
-const {IC,api,H,setConn,toast,API}=AudensShell;
-let stores=[],storeMap={},pool=[],routes=[],suggestions=[],selected=new Set(),min=2,max=3,raioKm=2,drivers=[];
+const {api,H,setConn,toast,API}=AudensShell;
+let stores=[],storeMap={},allOrders=[],pool=[],routes=[],suggestions=[],drivers=[],queue=[];
+let selected=new Set(),min=2,max=3,raioKm=2;
+let priority=new Set(),held=new Set(),rejected=new Set(),drvOverride={};
 
-function check(){return `<span class="chk">${IC.check}</span>`;}
-function coord(o){return o&&o.address&&o.address.lat!=null&&o.address.lng!=null?o.address:null;}
-function hav(a,b){if(!a||!b)return null;const R=6371,r=d=>d*Math.PI/180;const dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng);const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
-function selectedSpread(){const os=[...selected].map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);let mx=0,any=false;for(let i=0;i<os.length;i++)for(let j=i+1;j<os.length;j++){const d=hav(coord(os[i]),coord(os[j]));if(d!=null){any=true;if(d>mx)mx=d;}}return any?mx:null;}
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+function minsSince(iso){ if(!iso)return 0; return Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/60000)); }
+function relMin(iso){ const m=minsSince(iso); if(m<1)return 'agora'; if(m<60)return m+' min'; return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'); }
+function hhmm(d){ return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function hav(a,b){ if(!a||!b||a.lat==null||b.lat==null)return null; const R=6371,r=d=>d*Math.PI/180; const dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng); const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function coord(o){ return o&&o.address&&o.address.lat!=null&&o.address.lng!=null?{lat:o.address.lat,lng:o.address.lng}:null; }
+function storeCoord(o){ const s=storeMap[o&&o.storeId]; return s&&s.lat!=null&&s.lng!=null?{lat:s.lat,lng:s.lng}:null; }
+function distFromStore(o){ const c=coord(o),s=storeCoord(o); return (c&&s)?hav(s,c):null; }
+function riskOf(o){ let score=minsSince(o.readyAt||o.groupingStartedAt||o.createdAt); const d=distFromStore(o); if(d!=null)score+=d*4; return score>=20?'alto':score>=10?'medio':'baixo'; }
+function riskLabel(r){ return r==='alto'?'Alto':r==='medio'?'Médio':'Baixo'; }
 
-function renderStats(){
-  document.getElementById('stats').innerHTML=`
-    <div class="agstat"><div class="n">${pool.length}</div><div class="l">Aguardando agrupamento</div></div>
-    <div class="agstat"><div class="n">${suggestions.length}</div><div class="l">Sugestões prontas</div></div>
-    <div class="agstat"><div class="n">${routes.length}</div><div class="l">Rotas montadas</div></div>`;
+// caminho por vizinho mais próximo a partir da loja; devolve pontos ordenados + distância total
+function routePath(orders){
+  const pts=orders.map(o=>({o,c:coord(o)})).filter(x=>x.c);
+  if(!pts.length)return {seq:[],dist:null};
+  const start=storeCoord(orders[0]);
+  const seq=[]; const rem=[...pts]; let cur=start||rem[0].c;
+  if(!start){ seq.push(rem.shift()); cur=seq[0].c; }
+  while(rem.length){ let bi=0,bd=Infinity; rem.forEach((p,i)=>{const d=hav(cur,p.c); if(d!=null&&d<bd){bd=d;bi=i;}}); seq.push(rem[bi]); cur=rem[bi].c; rem.splice(bi,1); }
+  let dist=0,prev=start||seq[0].c;
+  for(const p of seq){ const d=hav(prev,p.c); if(d!=null)dist+=d; prev=p.c; }
+  return {seq,dist:Math.round(dist*10)/10,store:start};
+}
+function routeMetrics(orders){
+  const {dist}=routePath(orders);
+  const stops=orders.length;
+  const time=dist!=null?Math.round(dist/0.35+stops*3):null;
+  let risk='baixo'; if(dist!=null){ if(dist>=7)risk='alto'; else if(dist>=5)risk='medio'; }
+  if(orders.some(o=>riskOf(o)==='alto'))risk='alto';
+  return {dist,time,risk,stops};
+}
+function miniMap(orders){
+  const {seq,store}=routePath(orders);
+  const w=150,h=112,pad=16;
+  if(seq.length<1){ return `<svg class="smap" viewBox="0 0 ${w} ${h}"><text x="${w/2}" y="${h/2}" fill="#6f6690" font-size="9" text-anchor="middle">sem mapa</text></svg>`; }
+  const all=[...seq.map(s=>s.c)]; if(store)all.push(store);
+  const lats=all.map(p=>p.lat), lngs=all.map(p=>p.lng);
+  let minLa=Math.min(...lats),maxLa=Math.max(...lats),minLo=Math.min(...lngs),maxLo=Math.max(...lngs);
+  if(maxLa-minLa<1e-4){minLa-=5e-4;maxLa+=5e-4;} if(maxLo-minLo<1e-4){minLo-=5e-4;maxLo+=5e-4;}
+  const X=lo=>pad+(lo-minLo)/(maxLo-minLo)*(w-2*pad);
+  const Y=la=>pad+(maxLa-la)/(maxLa-minLa)*(h-2*pad);
+  let grid=''; for(let i=1;i<4;i++){grid+=`<line x1="${i/4*w}" y1="0" x2="${i/4*w}" y2="${h}" stroke="#1c1830" stroke-width="1"/><line x1="0" y1="${i/4*h}" x2="${w}" y2="${i/4*h}" stroke="#1c1830" stroke-width="1"/>`;}
+  const pathPts=[]; if(store)pathPts.push(store); seq.forEach(s=>pathPts.push(s.c));
+  const line=pathPts.map((p,i)=>(i?'L':'M')+X(p.lng).toFixed(1)+' '+Y(p.lat).toFixed(1)).join(' ');
+  const stops=seq.map((s,i)=>`<circle cx="${X(s.c.lng).toFixed(1)}" cy="${Y(s.c.lat).toFixed(1)}" r="9" fill="#7c3aed"/><text x="${X(s.c.lng).toFixed(1)}" y="${(Y(s.c.lat)+3).toFixed(1)}" fill="#fff" font-size="9" font-weight="800" text-anchor="middle">${i+1}</text>`).join('');
+  const home=store?`<g transform="translate(${(X(store.lng)-6).toFixed(1)},${(Y(store.lat)-6).toFixed(1)})"><rect width="12" height="12" rx="3" fill="#22d3ee"/><path d="M2 6 6 3l4 3v4H2Z" fill="#0d0a18"/></g>`:'';
+  return `<svg class="smap" viewBox="0 0 ${w} ${h}">${grid}<path d="${line}" fill="none" stroke="#a855f7" stroke-width="2" stroke-linejoin="round" opacity="0.9"/>${home}${stops}</svg>`;
+}
+function driverRating(d){ if(d.rating!=null)return Number(d.rating).toFixed(1); if(d.acceptanceRate!=null)return (d.acceptanceRate/20).toFixed(1); return null; }
+function avatarInner(d){ return d&&d.photoUrl?`<img src="${d.photoUrl}">`:((d&&d.name||'?').trim().charAt(0).toUpperCase()); }
+function suggestedDriver(i){
+  if(drvOverride[i]){ const d=drivers.find(x=>x.id===drvOverride[i]); if(d)return d; }
+  if(queue.length)return queue[i%queue.length];
+  const onl=drivers.filter(d=>d.online); return onl.length?onl[i%onl.length]:null;
+}
+
+/* ---------------- render ---------------- */
+function renderKPIs(){
+  document.getElementById('kPed').textContent=pool.length;
+  document.getElementById('kSug').textContent=visibleSugs().length;
+  document.getElementById('kFila').textContent=queue.length;
+  document.getElementById('c1').textContent=pool.length;
+  document.getElementById('c2').textContent=visibleSugs().length;
+  document.getElementById('c3').textContent=queue.length;
+  const hi=pool.filter(o=>riskOf(o)==='alto').length;
+  document.getElementById('riskCount').textContent=hi?('· '+hi):'';
+  document.getElementById('upd').textContent='Última atualização: '+hhmm(new Date());
+}
+function ico(name){
+  const p={lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    star:'<path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3Z"/>',
+    send:'<path d="M4 12 20 4l-6 16-3-7-7-1Z"/>',
+    pause:'<rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/>',
+    skip:'<path d="M5 5v14l9-7-9-7Z"/><rect x="16" y="5" width="3" height="14" rx="1"/>',
+    x:'<path d="M6 6l12 12M18 6 6 18"/>',
+    pin:'<path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>'};
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">${p[name]||''}</svg>`;
 }
 function renderPool(){
   const box=document.getElementById('pool');
-  if(!pool.length){ box.innerHTML=`<div class="card-b" style="text-align:center;color:var(--faint)">Nenhum pedido aguardando agrupamento.<br><span style="font-size:12px">Marque pedidos como <b>Pronto</b> no Dashboard para eles aparecerem aqui. 🍔🍕</span></div>`; return; }
-  box.innerHTML=`<div class="gwrap">`+pool.map(o=>{
+  const list=pool.filter(o=>!held.has(o.id));
+  if(!pool.length){ box.innerHTML=`<div class="empty">Nenhum pedido pronto.<br><span style="font-size:11.5px">Marque pedidos como <b>Pronto</b> no Dashboard.</span></div>`; document.getElementById('poolFoot').style.display='none'; return; }
+  document.getElementById('poolFoot').style.display='flex';
+  const rows=list.map(o=>{
     const on=selected.has(o.id);
-    const bairro=(o.address&&o.address.neighborhood)||'—';
-    const geo=coord(o)?'':' <span style="color:var(--faint);font-size:10px">· sem localização</span>';
-    return `<div class="gc ${on?'on':''}" onclick="toggle('${o.id}')">
-      ${check()}
-      <div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">#${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
-      <div class="bairro">${bairro}${geo}</div>
-      <div class="r2"><span class="tm">${H.rel(o.readyAt||o.groupingStartedAt||o.createdAt)} pronto</span><span class="val">${H.money(o.total)}</span></div>
-    </div>`;
-  }).join('')+`</div>`;
+    const risk=riskOf(o);
+    const d=distFromStore(o);
+    return `<tr class="${on?'sel':''}">
+      <td><div class="cbx ${on?'on':''}" onclick="toggle('${o.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-11"/></svg></div></td>
+      <td><div class="oidc">#${o.displayId||o.externalOrderId||''}</div><div class="oval">${money(o.total)}</div></td>
+      <td>${o.storeName||'—'}</td>
+      <td>${(o.address&&o.address.neighborhood)||'—'}</td>
+      <td>${relMin(o.readyAt||o.groupingStartedAt||o.createdAt)}</td>
+      <td>${d!=null?d.toFixed(1)+' km':'—'}</td>
+      <td><span class="risk ${risk}">${riskLabel(risk)}</span></td>
+      <td><div class="actq">
+        <button class="${priority.has(o.id)?'on':''}" title="Prioridade" onclick="togPri('${o.id}')">${ico('star')}</button>
+        <button title="Segurar (ocultar)" onclick="togHold('${o.id}')">${ico('lock')}</button>
+        <button title="Criar rota só com este (exceção)" onclick="soloRoute('${o.id}')">${ico('send')}</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  box.innerHTML=`<div style="overflow-x:auto"><table class="pt"><thead><tr><th></th><th>Pedido</th><th>Loja</th><th>Bairro</th><th>Tempo</th><th>Dist.</th><th>Risco</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    + (held.size?`<div style="text-align:center;margin-top:8px"><a href="javascript:void(0)" onclick="held.clear();renderPool()" style="color:var(--faint);font-size:11px">mostrar ${held.size} pedido(s) oculto(s)</a></div>`:'');
+  renderSelbar();
 }
 function renderSelbar(){
   const n=selected.size;
   document.getElementById('selN').textContent=n;
-  const make=document.getElementById('makeBtn'), force=document.getElementById('forceBtn');
-  const ok = n>=min && n<=max;
-  make.classList.toggle('dis',!ok);
-  force.style.display = (n===1)?'inline-flex':'none';
-  const sp=document.getElementById('spread'), d=selectedSpread();
-  if(n<2||d==null){ sp.innerHTML=''; }
-  else{ const cor=d>raioKm?'var(--amber)':'var(--green)'; sp.innerHTML=`dispersão: <b style="color:${cor}">${d.toFixed(1)} km</b>${d>raioKm?' (acima do raio)':''}`; }
+  const ok=n>=min&&n<=max;
+  document.getElementById('makeBtn').disabled=!ok;
+  document.getElementById('forceBtn').style.display=(n===1)?'inline-flex':'none';
+  const os=[...selected].map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);
+  let mx=0,any=false; for(let i=0;i<os.length;i++)for(let j=i+1;j<os.length;j++){const dd=hav(coord(os[i]),coord(os[j]));if(dd!=null){any=true;if(dd>mx)mx=dd;}}
+  const sp=document.getElementById('spread');
+  sp.innerHTML=(n<2||!any)?'':` · dispersão <b style="color:${mx>raioKm?'var(--amber)':'var(--green)'}">${mx.toFixed(1)} km</b>`;
 }
-function toggle(id){
-  if(selected.has(id))selected.delete(id);
-  else{ if(selected.size>=max){ toast(`Máximo de ${max} pedidos por rota`); return; } selected.add(id); }
-  renderPool(); renderSelbar();
-}
+function visibleSugs(){ return suggestions.filter(s=>!rejected.has(s.orderIds.join(','))); }
 function renderSuggestions(){
   const box=document.getElementById('suggestions');
-  if(!suggestions.length){ box.innerHTML=`<div class="panel-empty">Sem sugestões no momento<small>elas aparecem quando há 2+ pedidos prontos no mesmo bairro</small></div>`; return; }
-  box.innerHTML=suggestions.map((s,i)=>`
-    <div class="sug">
-      <div class="h"><b>${s.neighborhood||'—'}</b><span class="tag">${s.orders.length} pedidos</span></div>
-      <div style="font-size:10.5px;color:var(--faint);margin:-2px 0 7px">${s.basis==='proximidade'?('por distância'+(s.maxKm!=null?` · até ${s.maxKm} km`:'')):'por bairro'}</div>
-      <div class="ol">${s.orders.map(o=>`#${o.displayId} · ${o.storeName} · ${H.money(o.total)}`).join('<br>')}</div>
-      <div class="foot"><span class="v">${H.money(s.totalValue)}</span><button class="mini g" onclick='approveSug(${i})'>Aprovar rota</button></div>
-    </div>`).join('');
-}
-function renderRoutes(){
-  const box=document.getElementById('routes');
-  if(!routes.length){ box.innerHTML=`<div class="panel-empty">Nenhuma rota montada ainda<small>crie uma selecionando pedidos ao lado</small></div>`; return; }
-  const stMap={sent_to_driver:'enviada ao motoboy',accepted_by_driver:'aceita',in_progress:'em entrega'};
-  box.innerHTML=routes.map(r=>{
-    const despachada=!!r.driverId;
-    const opts=drivers.map(d=>`<option value="${d.id}">${d.name}${d.online?'':' (offline)'}</option>`).join('');
-    const foot = despachada
-      ? `<span class="v">${H.money(r.totalValue)}</span><span style="font-size:11px;color:var(--green)">🛵 ${r.driverName||''} · ${stMap[r.status]||r.status}</span>`
-      : `<span class="v">${H.money(r.totalValue)}</span>
-         <select id="dv-${r.id}" class="copy" style="padding:6px 8px;font-weight:600">${drivers.length?opts:'<option>sem motoboys</option>'}</select>
-         <button class="mini g" onclick="dispatch('${r.id}')">Despachar</button>
-         <button class="mini d" onclick="undoRoute('${r.id}')">desfazer</button>`;
-    return `<div class="rt">
-      <div class="h"><b>${(r.neighborhoods||[]).join(', ')||'Rota'}</b><span class="badge ${r.isException?'exc':'ok'}">${r.isException?'exceção · 1 pedido':(r.orderCount+' pedidos')}</span></div>
-      <div class="ol">${(r.orders||[]).map(id=>{const o=orderById(id);return `<span class="pill">#${o?(o.displayId||o.externalOrderId):id.slice(-5)}</span>`;}).join('')}</div>
-      <div class="foot">${foot}</div>
+  const list=visibleSugs();
+  if(!list.length){ box.innerHTML=`<div class="empty">Sem sugestões agora.<br><span style="font-size:11.5px">Aparecem quando há 2+ pedidos prontos próximos.</span></div>`; return; }
+  box.innerHTML=list.map((s,i)=>{
+    const ords=s.orderIds.map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);
+    const m=routeMetrics(ords);
+    const drv=suggestedDriver(i);
+    const rating=drv?driverRating(drv):null;
+    const num=String(i+1).padStart(3,'0');
+    return `<div class="sug">
+      <div class="sh"><b>Rota sugerida #${num}</b>${i===0?'<span class="rec">Recomendado</span>':''}</div>
+      <div class="body">
+        <div>
+          <div class="lbl">Pedidos</div>
+          <div class="chips">${ords.map(o=>`<span class="c">#${o.displayId||o.externalOrderId}</span>`).join('')}</div>
+          <div class="lbl">Motoboy sugerido</div>
+          <div class="moto">${drv?`<span class="av">${avatarInner(drv)}</span><div><div class="nm">${drv.name}</div>${rating?`<div class="rt">★ ${rating}</div>`:'<div class="rt" style="color:var(--faint)">na fila</div>'}</div>`:'<span style="font-size:12px;color:var(--amber)">nenhum motoboy online</span>'}</div>
+          <div class="metrics">
+            <div class="metric"><div class="mv">${m.dist!=null?String(m.dist).replace('.',',')+' km':'—'}</div><div class="ml">Distância total</div></div>
+            <div class="metric"><div class="mv">${m.time!=null?m.time+' min':'—'}</div><div class="ml">Tempo estimado</div></div>
+            <div class="metric"><div class="mv"><span class="risk ${m.risk}" style="font-size:12px">${riskLabel(m.risk)}</span></div><div class="ml">Risco</div></div>
+          </div>
+        </div>
+        <div>${miniMap(ords)}</div>
+      </div>
+      <div class="sug-acts">
+        <button class="sb g" onclick="approveSug(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5 9-11"/></svg>Aprovar rota</button>
+        <button class="sb" onclick="editSug(${i})">Editar</button>
+        <button class="sb" onclick="trocarMotoboy(${i})">Trocar motoboy</button>
+        <button class="sb" onclick="recalcAll()">Recalcular</button>
+        <button class="sb dg" onclick="rejeitarSug(${i})">Rejeitar</button>
+      </div>
     </div>`;
   }).join('');
 }
-function orderById(id){ return allOrders.find(o=>o.id===id); }
-let allOrders=[];
+function renderQueue(){
+  const box=document.getElementById('queue');
+  if(!queue.length){ box.innerHTML=`<div class="empty">Nenhum motoboy online.</div>`; return; }
+  const rows=queue.map((d,i)=>{
+    const wait=minsSince(d.arrivedAtStore||d.wentOnlineAt||d.updatedAt);
+    const wcls=wait>=13?'w2':wait>=6?'w1':'w0';
+    let eta;
+    if(d.isInsideStoreGeofence)eta='<span style="color:var(--green)">na loja</span>';
+    else if(d.distanceToStoreMeters!=null){ const min=Math.max(1,Math.round(d.distanceToStoreMeters/250)); eta=hhmm(new Date(Date.now()+min*60000)); }
+    else eta='—';
+    return `<tr>
+      <td><div class="qpos">${i+1}</div></td>
+      <td><div class="qname"><div class="qav">${avatarInner(d)}</div><div style="font-weight:700">${d.name}</div></div></td>
+      <td>${eta}</td>
+      <td><span class="qwait ${wcls}">${wait} min</span></td>
+      <td><div class="actq">
+        <button title="Pausar (ficar offline)" onclick="pauseDrv('${d.id}')">${ico('pause')}</button>
+        <button title="Localizar" onclick="locateDrv('${d.id}')">${ico('pin')}</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  box.innerHTML=`<div style="overflow-x:auto"><table class="qt"><thead><tr><th>#</th><th>Motoboy</th><th>Chegada</th><th>Espera</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 
+/* ---------------- ações ---------------- */
+function toggle(id){ if(selected.has(id))selected.delete(id); else{ if(selected.size>=max){toast('Máximo de '+max+' por rota');return;} selected.add(id);} renderPool(); }
+function togPri(id){ priority.has(id)?priority.delete(id):priority.add(id); resortPool(); renderPool(); }
+function togHold(id){ held.add(id); selected.delete(id); renderPool(); }
+function resortPool(){ pool.sort((a,b)=>{ const pa=priority.has(a.id)?0:1,pb=priority.has(b.id)?0:1; if(pa!==pb)return pa-pb; return (a.createdAt<b.createdAt?-1:1); }); }
+async function soloRoute(id){ if(!confirm('Criar rota só com este pedido (exceção)?'))return; try{ await api.createRoute({orderIds:[id],force:true,exceptionReason:'exceção manual'}); toast('Rota criada (exceção)'); await load(); }catch(e){ toast('Erro: '+e.message); } }
 async function createRoute(force){
   const ids=[...selected];
-  if(!force && (ids.length<min||ids.length>max)){ toast(`Selecione de ${min} a ${max} pedidos`); return; }
-  if(force && ids.length!==1){ toast('A exceção é para 1 pedido só'); return; }
-  try{
-    await api.createRoute({orderIds:ids, force:!!force, exceptionReason:force?'exceção manual do operador':null});
-    toast(force?'Rota criada (exceção registrada)':'Rota criada'); selected.clear(); await load();
-  }catch(e){ toast('Erro: '+e.message); }
-}
-async function approveSug(i){
-  const s=suggestions[i]; if(!s)return;
-  try{ await api.createRoute({orderIds:s.orderIds, fromSuggestion:true}); toast('Sugestão aprovada — rota criada'); await load(); }
+  if(!force&&(ids.length<min||ids.length>max)){ toast('Selecione de '+min+' a '+max+' pedidos'); return; }
+  if(force&&ids.length!==1){ toast('A exceção é para 1 pedido'); return; }
+  try{ await api.createRoute({orderIds:ids,force:!!force,exceptionReason:force?'exceção manual':null}); toast(force?'Rota criada (exceção)':'Rota criada'); selected.clear(); await load(); }
   catch(e){ toast('Erro: '+e.message); }
 }
-async function undoRoute(id){
-  if(!confirm('Desfazer esta rota? Os pedidos voltam para "aguardando agrupamento".'))return;
-  try{ await api.delRoute(id); toast('Rota desfeita'); await load(); }catch(e){ toast('Erro: '+e.message); }
+async function approveSug(i){
+  const s=visibleSugs()[i]; if(!s)return;
+  const drv=suggestedDriver(i);
+  try{
+    const route=await api.createRoute({orderIds:s.orderIds,fromSuggestion:true});
+    if(drv&&route&&route.id){ try{ await api.assignRoute(route.id,drv.id); }catch(_){ } }
+    toast(drv?('Rota aprovada e enviada para '+drv.name):'Rota aprovada'); await load();
+  }catch(e){ toast('Erro: '+e.message); }
 }
-async function dispatch(id){
-  const sel=document.getElementById('dv-'+id); const driverId=sel&&sel.value;
-  if(!driverId||driverId==='sem motoboys'){toast('Cadastre um motoboy em Usuários');return;}
-  try{ await api.assignRoute(id,driverId); toast('Rota despachada ao motoboy!'); await load(); }catch(e){ toast('Erro: '+e.message); }
+function editSug(i){
+  const s=visibleSugs()[i]; if(!s)return;
+  selected=new Set(s.orderIds.slice(0,max)); held.clear();
+  renderPool();
+  document.getElementById('pool').scrollIntoView({behavior:'smooth',block:'center'});
+  toast('Pedidos carregados — ajuste e clique em “Criar rota”');
 }
+function trocarMotoboy(i){
+  const pool2=queue.length?queue:drivers.filter(d=>d.online);
+  if(pool2.length<2){ toast('Não há outro motoboy disponível'); return; }
+  const cur=suggestedDriver(i);
+  const idx=pool2.findIndex(d=>cur&&d.id===cur.id);
+  const next=pool2[(idx+1)%pool2.length];
+  drvOverride[i]=next.id; renderSuggestions(); toast('Motoboy sugerido: '+next.name);
+}
+function rejeitarSug(i){ const s=visibleSugs()[i]; if(!s)return; rejected.add(s.orderIds.join(',')); renderSuggestions(); renderKPIs(); toast('Sugestão descartada'); }
+async function recalcAll(){ rejected.clear(); drvOverride={}; try{ suggestions=await api.routeSuggestions(); }catch(e){ suggestions=[]; } renderSuggestions(); renderKPIs(); toast('Sugestões recalculadas'); }
+function otimizarFila(){ load(); toast('Fila reordenada por chegada'); }
+async function pauseDrv(id){ const d=drivers.find(x=>x.id===id); if(!confirm('Colocar '+(d?d.name:'o motoboy')+' offline (sair da fila)?'))return; try{ await api.setDriverStatus(id,false); toast('Motoboy pausado (offline)'); await load(); }catch(e){ toast('Erro: '+e.message); } }
+function locateDrv(id){ const d=drivers.find(x=>x.id===id); if(d&&d.lastLat!=null&&d.lastLng!=null){ window.open('https://www.google.com/maps/search/?api=1&query='+d.lastLat+','+d.lastLng,'_blank'); } else toast('Sem localização recente deste motoboy'); }
 
-async function loadSuggestions(){
-  try{ suggestions=await api.routeSuggestions(); }catch(e){ suggestions=[]; }
-  renderSuggestions(); renderStats();
-}
+/* ---------------- load ---------------- */
 async function load(){
   if(!api.hasBackend){ setConn('err'); return; }
   try{
-    const [so,or_,rt,cfg,dr]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.routes().catch(()=>[]),fetch(API+'/api/settings').then(r=>r.json()).catch(()=>({})),api.drivers().catch(()=>[])]);
-    raioKm=Number(cfg&&cfg.maxDistanceBetweenGroupedOrdersKm)||2; drivers=Array.isArray(dr)?dr:[];
+    const [so,or_,rt,cfg,dr,qz,sug]=await Promise.all([
+      api.stores().catch(()=>[]), api.orders().catch(()=>[]), api.routes().catch(()=>[]),
+      api.getSettings().catch(()=>({})), api.drivers().catch(()=>[]), api.driverQueue().catch(()=>[]), api.routeSuggestions().catch(()=>[])
+    ]);
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
-    allOrders=Array.isArray(or_)?or_:[];
-    pool=allOrders.filter(o=>o.status==='waiting_grouping' && !o.assignedRouteId);
-    routes=Array.isArray(rt)?rt:[];
-    // mantém selecionados só os que ainda estão no pool
+    allOrders=Array.isArray(or_)?or_:[]; routes=Array.isArray(rt)?rt:[];
+    drivers=Array.isArray(dr)?dr:[]; queue=Array.isArray(qz)?qz:[]; suggestions=Array.isArray(sug)?sug:[];
+    const cf=cfg||{}; min=cf.minOrdersPerRoute||2; max=cf.maxOrdersPerRoute||3; raioKm=Number(cf.maxDistanceBetweenGroupedOrdersKm)||2;
+    pool=allOrders.filter(o=>o.status==='waiting_grouping'&&!o.assignedRouteId); resortPool();
     const poolIds=new Set(pool.map(o=>o.id)); [...selected].forEach(id=>{ if(!poolIds.has(id))selected.delete(id); });
     setConn('live');
   }catch(e){ setConn('err'); }
-  document.getElementById('minR').textContent=min; document.getElementById('maxR').textContent=max;
-  renderStats(); renderPool(); renderSelbar(); renderRoutes();
-  await loadSuggestions();
+  renderKPIs(); renderPool(); renderSuggestions(); renderQueue();
 }
 load(); setInterval(load,8000);
 </script>
