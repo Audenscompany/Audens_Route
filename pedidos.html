@@ -58,9 +58,12 @@ async function doDeliver(driverId){
   catch(e){ toast('Erro: '+e.message); }
 }
 function refTime(o){ return new Date(o.readyAt||o.preparingAt||o.createdAt||0).getTime(); }
+function isTodayD(iso){ if(!iso)return false; const d=new Date(iso),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
 function renderBoard(){
   document.getElementById('board').innerHTML=COLS.map(col=>{
-    const items=orders.filter(o=>col.st.includes(o.status)).sort((a,b)=>refTime(a)-refTime(b));
+    let items=orders.filter(o=>col.st.includes(o.status));
+    if(col.st.includes('delivered')) items=items.filter(o=>isTodayD(o.deliveredAt||o.updatedAt||o.createdAt)); // só entregues de hoje
+    items=items.sort((a,b)=>refTime(a)-refTime(b));
     const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
     return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body" style="max-height:none">${cards}</div></div>`;
   }).join('');
