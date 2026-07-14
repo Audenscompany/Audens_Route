@@ -105,6 +105,7 @@
     delStore:(id)=>j(API+'/api/stores/'+id,{method:'DELETE'}),
     setStatus:(id,st)=>j(`${API}/api/orders/${id}/status`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:st})}),
     deliverManual:(id,driverId)=>j(`${API}/api/orders/${id}/deliver-manual`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
+    finalizeOrder:(id,by,finalized)=>j(`${API}/api/orders/${id}/finalize`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({by:by||'',finalized:finalized!==false})}),
     webhookUrl:(s)=>`${API}/api/webhooks/orders/${s.id}?key=${s.webhookSecret}`,
     routes:()=>j(API+'/api/routes?active=true'),
     routeSuggestions:()=>j(API+'/api/routes/suggestions'),
@@ -154,7 +155,8 @@
     {nm:'Pronto',color:'#34d399',st:['ready']},
     {nm:'Aguardando agrupamento',color:'#a855f7',st:['waiting_grouping','grouped']},
     {nm:'Em rota',color:'#22d3ee',st:['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']},
-    {nm:'Entregue',color:'#7a869a',st:['delivered']},
+    {nm:'Entregue',color:'#7a869a',st:['delivered'],pred:o=>!o.finalized},
+    {nm:'Finalizado',color:'#34d399',st:['delivered'],pred:o=>!!o.finalized},
   ];
   const NEXT={received:['preparing','Iniciar preparo','#7c3aed'],confirmed:['preparing','Iniciar preparo','#7c3aed'],preparing:['ready','Marcar pronto','#34d399']};
 
