@@ -137,6 +137,7 @@
     getSettings:()=>j(API+'/api/settings'),
     patchSettings:(b)=>j(API+'/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
     driverFees:()=>j(API+'/api/finance/driver-fees'),
+    metrics:(days)=>j(API+'/api/metrics?days='+(days||7)),
   };
 
   // helpers de formatação/domínio
