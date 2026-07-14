@@ -3,107 +3,107 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#0f1115" />
+<meta name="theme-color" content="#0a0713" />
 <title>Audens Route — Entrar</title>
 <style>
   :root{
-    --bg:#0f1115; --surface:#171a21; --surface-2:#1e222b; --border:#2a2f3a;
-    --text:#e7ebf0; --text-dim:#9aa4b2; --text-faint:#6b7484;
-    --accent:#4f8cff; --purple:#9b7dff; --green:#34c77b; --amber:#f5a524; --red:#f2545b;
+    --bg:#0a0713; --bg2:#0d0a18; --card2:#1a1330; --line:#2b2148; --line2:#3a2c5c;
+    --text:#f2eefb; --dim:#b6acd2; --faint:#7a7096;
+    --violet:#a855f7; --violet2:#7c3aed; --violet3:#c084fc; --green:#34d399; --amber:#f5b544; --red:#f2545b;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
   body{
-    margin:0; min-height:100vh; background:
-      radial-gradient(1200px 500px at 50% -10%, rgba(79,140,255,.14), transparent 60%),
-      var(--bg);
-    color:var(--text); display:grid; place-items:center; padding:24px;
-    -webkit-font-smoothing:antialiased;
+    margin:0;min-height:100vh;color:var(--text);-webkit-font-smoothing:antialiased;
+    display:grid;place-items:center;padding:24px;
+    /* imagem de fundo: salve a arte como login-bg.png na mesma pasta. */
+    background:url('login-bg.png') center/cover no-repeat,#0a0713;
+    background-attachment:fixed;
   }
+  /* leve escurecimento só atrás do card, p/ legibilidade sem apagar a arte */
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(680px 620px at 50% 50%,rgba(6,4,14,.55),transparent 72%);}
+  .card{position:relative;z-index:1;}
   .card{
-    width:100%; max-width:380px; background:var(--surface);
-    border:1px solid var(--border); border-radius:18px; padding:30px 28px;
-    box-shadow:0 10px 40px rgba(0,0,0,.4);
+    width:100%;max-width:420px;
+    background:linear-gradient(180deg,rgba(26,19,48,.78),rgba(16,12,28,.92));
+    border:1px solid var(--line2);border-radius:22px;padding:32px 30px 24px;
+    box-shadow:0 30px 90px rgba(0,0,0,.6);backdrop-filter:blur(10px);
   }
-  .brand{display:flex; align-items:center; gap:12px; margin-bottom:22px;}
-  .logo{
-    width:44px; height:44px; border-radius:12px;
-    background:linear-gradient(135deg,var(--accent),var(--purple));
-    display:grid; place-items:center; font-weight:800; color:#fff; font-size:20px;
-  }
-  .brand h1{font-size:18px; margin:0; line-height:1.1;}
-  .brand span{font-size:12.5px; color:var(--text-dim);}
+  /* logo no card só aparece no celular (no desktop a arte de fundo já traz a marca) */
+  .brand{display:none;flex-direction:column;align-items:center;gap:10px;margin-bottom:8px;}
+  @media(max-width:760px){ .brand{display:flex;} }
+  .brand img{height:56px;width:auto;display:block;}
+  .brand .tx{font-weight:800;letter-spacing:.14em;font-size:17px;text-align:center;line-height:1;} .brand .tx small{display:block;font-size:9px;letter-spacing:.36em;color:var(--violet3);margin-top:3px;}
+  .card h1{font-size:23px;text-align:center;margin:14px 0 5px;font-weight:800;}
+  .card .sub{text-align:center;color:var(--dim);font-size:13px;margin:0 0 22px;}
   .field{margin-bottom:14px;}
-  .field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text-dim);}
-  .field input{
-    width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text);
-    border-radius:10px; padding:11px 13px; font-size:14px; font-family:inherit;
-  }
-  .field input:focus{outline:none; border-color:var(--accent);}
-  .btn-primary{
-    width:100%; border:none; background:var(--accent); color:#fff; font-weight:700;
-    padding:12px; border-radius:10px; font-size:14px; cursor:pointer; margin-top:4px;
-    transition:filter .15s;
-  }
-  .btn-primary:hover{filter:brightness(1.08);}
-  .btn-primary:disabled{opacity:.5; cursor:default;}
-  .err{color:var(--red); font-size:12.5px; margin-top:10px; min-height:16px;}
-  .divider{
-    display:flex; align-items:center; gap:12px; margin:22px 0 16px; color:var(--text-faint); font-size:11.5px;
-  }
-  .divider::before,.divider::after{content:""; flex:1; height:1px; background:var(--border);}
-  .roles-label{font-size:12px; color:var(--text-dim); margin-bottom:10px; text-align:center;}
-  .roles{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
-  .role{
-    border:1px solid var(--border); background:var(--surface-2); color:var(--text);
-    padding:11px 10px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer;
-    display:flex; align-items:center; gap:9px; transition:background .15s,border-color .15s;
-  }
-  .role:hover{background:#262b36; border-color:var(--accent);}
-  .role .ic{width:9px; height:9px; border-radius:50%;}
-  .foot{margin-top:20px; text-align:center; font-size:11.5px; color:var(--text-faint); line-height:1.6;}
-  .mode-tag{
-    display:inline-block; margin-top:2px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:600;
-    background:rgba(245,165,36,.14); color:var(--amber);
-  }
-  .mode-tag.live{background:rgba(52,199,123,.14); color:var(--green);}
+  .field label{display:block;font-size:12.5px;font-weight:700;margin-bottom:7px;color:var(--dim);}
+  .inp{display:flex;align-items:center;gap:10px;background:rgba(10,7,19,.6);border:1px solid var(--line);border-radius:12px;padding:0 12px;transition:border-color .15s,box-shadow .15s;}
+  .inp:focus-within{border-color:var(--violet);box-shadow:0 0 0 3px rgba(168,85,247,.16);}
+  .inp .li{color:var(--faint);width:18px;height:18px;flex-shrink:0;}
+  .inp input{flex:1;background:none;border:none;color:var(--text);font-size:14.5px;font-family:inherit;padding:13px 0;}
+  .inp input:focus{outline:none;} .inp input::placeholder{color:var(--faint);}
+  .inp .eye{background:none;border:none;color:var(--faint);cursor:pointer;padding:4px;display:grid;place-items:center;} .inp .eye:hover{color:var(--dim);} .inp .eye svg{width:18px;height:18px;}
+  .forgot{text-align:right;margin:-2px 0 18px;} .forgot a{color:var(--violet3);font-size:12.5px;font-weight:600;text-decoration:none;cursor:pointer;} .forgot a:hover{text-decoration:underline;}
+  .btn{width:100%;border:none;background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;font-weight:800;padding:14px;border-radius:12px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 12px 30px rgba(124,58,237,.42);transition:filter .15s,transform .05s;}
+  .btn:hover{filter:brightness(1.07);} .btn:active{transform:translateY(1px);} .btn:disabled{opacity:.6;cursor:default;}
+  .err{color:var(--red);font-size:12.5px;margin-top:12px;min-height:16px;text-align:center;} .err.ok{color:var(--green);}
+  .divider{display:flex;align-items:center;gap:12px;margin:22px 0 14px;color:var(--faint);font-size:10.5px;font-weight:800;letter-spacing:.14em;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line);}
+  .roles{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .role{border:1px solid var(--line);background:rgba(26,19,48,.6);color:var(--text);padding:12px;border-radius:13px;cursor:pointer;display:flex;align-items:center;gap:11px;text-align:left;transition:border-color .15s,background .15s;}
+  .role:hover{border-color:var(--violet);background:#221a3e;}
+  .role .ri{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;} .role .ri svg{width:16px;height:16px;}
+  .role .rt{font-size:13px;font-weight:800;} .role .rs{font-size:10px;color:var(--faint);margin-top:1px;}
+  .foot{margin-top:18px;text-align:center;}
+  .foot .badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;color:var(--amber);} .foot .badge.live{color:var(--green);} .foot .badge svg{width:14px;height:14px;}
+  .foot .fs{font-size:11px;color:var(--faint);margin-top:5px;}
 </style>
 </head>
 <body>
   <div class="card">
     <div class="brand">
-      <div class="logo">A</div>
-      <div>
-        <h1>Audens Route</h1>
-        <span>Logística de delivery</span>
-      </div>
+      <img src="logo.png" alt="Audens Route" onerror="this.style.display='none';document.getElementById('brandTx').style.display='block'"/>
+      <div class="tx" id="brandTx" style="display:none">AUDENS<small>ROUTE</small></div>
     </div>
+    <h1>Bem-vindo de volta! 👋</h1>
+    <div class="sub">Faça login para acessar sua conta</div>
 
     <form id="loginForm" autocomplete="on">
       <div class="field">
         <label for="email">E-mail</label>
-        <input id="email" type="email" placeholder="voce@exemplo.com" required />
+        <div class="inp">
+          <svg class="li" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          <input id="email" type="email" placeholder="voce@exemplo.com" required />
+        </div>
       </div>
       <div class="field">
         <label for="password">Senha</label>
-        <input id="password" type="password" placeholder="••••••••" required />
+        <div class="inp">
+          <svg class="li" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <input id="password" type="password" placeholder="••••••••" required />
+          <button type="button" class="eye" id="eye" onclick="togglePw()" aria-label="Mostrar senha">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
-      <button class="btn-primary" id="submitBtn" type="submit">Entrar</button>
+      <div class="forgot"><a onclick="forgotPw()">Esqueceu sua senha?</a></div>
+      <button class="btn" id="submitBtn" type="submit">Entrar <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       <div class="err" id="err"></div>
     </form>
 
-    <div class="divider">acesso rápido (demonstração)</div>
-    <div class="roles-label">Entrar direto como:</div>
+    <div class="divider">ACESSO RÁPIDO</div>
     <div class="roles">
-      <button class="role" onclick="goAs('admin')"><span class="ic" style="background:var(--purple)"></span>Admin</button>
-      <button class="role" onclick="goAs('operator')"><span class="ic" style="background:var(--accent)"></span>Operador</button>
-      <button class="role" onclick="goAs('kitchen')"><span class="ic" style="background:var(--amber)"></span>Cozinha</button>
-      <button class="role" onclick="goAs('driver')"><span class="ic" style="background:var(--green)"></span>Motoboy</button>
+      <button class="role" onclick="goAs('admin')"><span class="ri" style="background:rgba(168,85,247,.16);color:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3Z"/></svg></span><div><div class="rt">Admin</div><div class="rs">Painel administrativo</div></div></button>
+      <button class="role" onclick="goAs('operator')"><span class="ri" style="background:rgba(96,165,250,.16);color:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></span><div><div class="rt">Operador</div><div class="rs">Gerenciar operações</div></div></button>
+      <button class="role" onclick="goAs('kitchen')"><span class="ri" style="background:rgba(245,181,68,.16);color:#f5b544"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 20h10"/><path d="M6.5 17h11v-2.5a4 4 0 0 0-1.2-8.4A4 4 0 0 0 9 4.6 4 4 0 0 0 6.5 14V17Z"/></svg></span><div><div class="rt">Cozinha</div><div class="rs">Ver pedidos</div></div></button>
+      <button class="role" onclick="goAs('driver')"><span class="ri" style="background:rgba(52,211,153,.16);color:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="7.5" r="3.2"/><path d="M5 20c0-3.4 3-5.2 7-5.2s7 1.8 7 5.2"/></svg></span><div><div class="rt">Motoboy</div><div class="rs">Fazer entregas</div></div></button>
     </div>
 
     <div class="foot">
-      <span id="modeTag" class="mode-tag">Modo demonstração</span><br/>
-      Preencha <code>config.js</code> com seu Firebase para o login real.
+      <span class="badge" id="modeTag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3Z"/></svg>Modo demonstração</span>
+      <div class="fs" id="footMsg">Preencha <code>config.js</code> com seu Firebase para o login real.</div>
     </div>
   </div>
 
@@ -112,47 +112,52 @@
   const CFG = window.AUDENS_CONFIG || {};
   const HAS_FB = !!(CFG.firebase && CFG.firebase.apiKey);
 
-  // roteamento por papel
-  function pageForRole(role){
-    return role === 'driver' ? 'motoboy.html' : 'dashboard.html';
-  }
-  function goAs(role){
-    // demonstração: sem autenticação real, apenas encaminha para a tela do papel
-    sessionStorageSafe('audens_role', role);
-    location.href = pageForRole(role);
-  }
+  function pageForRole(role){ return role === 'driver' ? 'motoboy.html' : 'dashboard.html'; }
   function sessionStorageSafe(k,v){ try{ sessionStorage.setItem(k,v);}catch(e){} }
+  function goAs(role){ sessionStorageSafe('audens_role', role); location.href = pageForRole(role); }
+
+  function togglePw(){
+    const i=document.getElementById('password');
+    i.type = i.type==='password' ? 'text' : 'password';
+    document.getElementById('eye').style.color = i.type==='text' ? 'var(--violet3)' : '';
+  }
 
   if (HAS_FB){
-    const tag = document.getElementById('modeTag');
-    tag.textContent = 'Firebase conectado'; tag.classList.add('live');
+    const tag = document.getElementById('modeTag'); tag.classList.add('live');
+    tag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Firebase conectado';
+    document.getElementById('footMsg').textContent = 'Seu acesso está protegido e seguro.';
+  }
+
+  async function forgotPw(){
+    const err = document.getElementById('err');
+    const email = document.getElementById('email').value.trim();
+    if (!HAS_FB){ err.className='err'; err.textContent='Recuperação de senha exige o Firebase configurado.'; return; }
+    if (!email){ err.className='err'; err.textContent='Digite seu e-mail acima para receber o link de redefinição.'; return; }
+    try{
+      const appMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const authMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      const auth = authMod.getAuth(appMod.initializeApp(CFG.firebase));
+      await authMod.sendPasswordResetEmail(auth, email);
+      err.className='err ok'; err.textContent='Enviamos um link de redefinição para '+email+'.';
+    }catch(ex){ err.className='err'; err.textContent='Não foi possível enviar o link. Verifique o e-mail.'; }
   }
 
   document.getElementById('loginForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
-    const err = document.getElementById('err');
-    const btn = document.getElementById('submitBtn');
-    err.textContent = '';
+    const err = document.getElementById('err'); const btn = document.getElementById('submitBtn');
+    err.className='err'; err.textContent = '';
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-
-    if (!HAS_FB){
-      // sem Firebase configurado: orienta usar o acesso rápido
-      err.textContent = 'Firebase não configurado — use o acesso rápido abaixo (ou preencha config.js).';
-      return;
-    }
-
-    btn.disabled = true; btn.textContent = 'Entrando…';
+    if (!HAS_FB){ err.textContent = 'Firebase não configurado — use o acesso rápido abaixo (ou preencha config.js).'; return; }
+    btn.disabled = true; btn.innerHTML = 'Entrando…';
     try{
       const appMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
       const authMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
       const app = appMod.initializeApp(CFG.firebase);
       const auth = authMod.getAuth(app);
       const cred = await authMod.signInWithEmailAndPassword(auth, email, password);
-      // papel virá do custom claim (role) — carregado no token
       const token = await cred.user.getIdTokenResult();
       let role = (token.claims && token.claims.role) || '';
-      // se o papel não veio no token, consulta o backend pelo e-mail
       if (!role && CFG.apiUrl){ try{ const w = await (await fetch(CFG.apiUrl+'/api/whoami?email='+encodeURIComponent(email))).json(); role = (w && w.role) || 'operator'; }catch(_){ role='operator'; } }
       if (!role) role='operator';
       sessionStorageSafe('audens_role', role);
@@ -160,7 +165,7 @@
       location.href = pageForRole(role);
     }catch(ex){
       err.textContent = 'Não foi possível entrar. Verifique e-mail e senha.';
-      btn.disabled = false; btn.textContent = 'Entrar';
+      btn.disabled = false; btn.innerHTML = 'Entrar <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
     }
   });
 </script>
