@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0a0913" />
 <link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <title>Audens Route — Agrupamento</title>
 <style>
   .ag-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
@@ -44,6 +45,10 @@
   .moto{display:flex;align-items:center;gap:9px;margin-bottom:11px;} .moto .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800;font-size:12px;overflow:hidden;} .moto .av img{width:100%;height:100%;object-fit:cover;} .moto .nm{font-size:12.5px;font-weight:800;} .moto .rt{font-size:10.5px;color:var(--amber);}
   .metrics{display:flex;gap:14px;margin-bottom:12px;} .metric .mv{font-size:14px;font-weight:800;} .metric .ml{font-size:10px;color:var(--faint);}
   .smap{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);background:#0d0a18;display:block;}
+  .smapL{width:100%;height:118px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#0d0a18;}
+  .smapL .leaflet-div-icon{background:transparent;border:0;}
+  .smini{position:relative;width:22px;height:22px;border-radius:50%;background:#7c3aed;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.5);}
+  .sministore{width:22px;height:22px;border-radius:6px;background:#34d399;color:#04241a;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.5);} .sministore svg{width:13px;height:13px;}
   .sug-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px;}
   .sb{border:1px solid var(--line);background:var(--card);color:var(--dim);border-radius:9px;padding:8px 11px;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;} .sb:hover{border-color:var(--violet);color:var(--text);} .sb svg{width:13px;height:13px;}
   .sb.g{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;} .sb.dg{color:var(--red);} .sb.dg:hover{border-color:var(--red);color:var(--red);}
@@ -130,6 +135,7 @@
 <script>window.PAGE='agrupamento';</script>
 <script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
 <script src="app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const {api,H,setConn,toast,API}=AudensShell;
 let stores=[],storeMap={},allOrders=[],pool=[],routes=[],suggestions=[],drivers=[],queue=[];
@@ -255,10 +261,38 @@ function renderSelbar(){
   sp.innerHTML=(n<2||!any)?'':` · dispersão <b style="color:${mx>raioKm?'var(--amber)':'var(--green)'}">${mx.toFixed(1)} km</b>`;
 }
 function visibleSugs(){ return suggestions.filter(s=>!rejected.has(s.orderIds.join(','))); }
-function renderSuggestions(){
+let sugMaps=[], lastSugSig=null, mapsBuilt=false;
+function sugSig(){ return visibleSugs().map((s,i)=>s.orderIds.join('-')+':'+(drvOverride[i]||'')).join('|'); }
+function destroySugMaps(){ sugMaps.forEach(m=>{try{m.remove();}catch(e){}}); sugMaps=[]; }
+function sminiStore(){ return L.divIcon({className:'',html:`<div class="sministore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>`,iconSize:[22,22],iconAnchor:[11,11]}); }
+function sminiStop(n){ return L.divIcon({className:'',html:`<div class="smini">${n}</div>`,iconSize:[22,22],iconAnchor:[11,11]}); }
+function initSugMaps(){
+  if(!window.L)return false;
+  destroySugMaps();
+  visibleSugs().forEach((s,i)=>{
+    const el=document.getElementById('smap_'+i); if(!el)return;
+    const ords=s.orderIds.map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);
+    const {seq,store}=routePath(ords);
+    const map=L.map(el,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,tap:false});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+    const pts=[];
+    const lineC=(store?[store]:[]).concat(seq.map(x=>x.c));
+    if(lineC.length>1) L.polyline(lineC.map(p=>[p.lat,p.lng]),{color:'#a855f7',weight:3,opacity:.9}).addTo(map);
+    if(store){ L.marker([store.lat,store.lng],{icon:sminiStore()}).addTo(map); pts.push([store.lat,store.lng]); }
+    seq.forEach((x,idx)=>{ L.marker([x.c.lat,x.c.lng],{icon:sminiStop(idx+1)}).addTo(map); pts.push([x.c.lat,x.c.lng]); });
+    if(pts.length){ try{ map.fitBounds(pts,{padding:[16,16],maxZoom:16}); }catch(e){} }
+    setTimeout(()=>{try{map.invalidateSize();}catch(e){}},60);
+    sugMaps.push(map);
+  });
+  return true;
+}
+function renderSuggestions(force){
   const box=document.getElementById('suggestions');
   const list=visibleSugs();
-  if(!list.length){ box.innerHTML=`<div class="empty">Sem sugestões agora.<br><span style="font-size:11.5px">Aparecem quando há 2+ pedidos prontos próximos.</span></div>`; return; }
+  if(!list.length){ destroySugMaps(); lastSugSig='__empty__'; mapsBuilt=true; box.innerHTML=`<div class="empty">Sem sugestões agora.<br><span style="font-size:11.5px">Aparecem quando há 2+ pedidos prontos próximos.</span></div>`; return; }
+  const sig=sugSig();
+  if(sig===lastSugSig && mapsBuilt && !force){ return; } // nada mudou -> mantém os mapas (sem piscar)
+  lastSugSig=sig;
   box.innerHTML=list.map((s,i)=>{
     const ords=s.orderIds.map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);
     const m=routeMetrics(ords);
@@ -279,7 +313,7 @@ function renderSuggestions(){
             <div class="metric"><div class="mv"><span class="risk ${m.risk}" style="font-size:12px">${riskLabel(m.risk)}</span></div><div class="ml">Risco</div></div>
           </div>
         </div>
-        <div>${miniMap(ords)}</div>
+        <div id="smap_${i}" class="smapL"></div>
       </div>
       <div class="sug-acts">
         <button class="sb g" onclick="approveSug(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5 9-11"/></svg>Aprovar rota</button>
@@ -290,6 +324,7 @@ function renderSuggestions(){
       </div>
     </div>`;
   }).join('');
+  mapsBuilt=initSugMaps(); // true se o Leaflet já carregou; senão tenta de novo no próximo ciclo
 }
 function renderQueue(){
   const box=document.getElementById('queue');

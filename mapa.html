@@ -20,7 +20,7 @@
   /* pinos */
   .mpin{position:relative;min-width:30px;padding:4px 8px;border-radius:8px;color:#fff;font-size:12px;font-weight:800;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.5);white-space:nowrap;border:1.5px solid rgba(255,255,255,.65);}
   .mpin .tip{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;}
-  .mstore{width:36px;height:36px;border-radius:10px;background:#22d3ee;color:#062a30;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);} .mstore svg{width:20px;height:20px;}
+  .mstore{width:36px;height:36px;border-radius:10px;background:#34d399;color:#04241a;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);} .mstore svg{width:20px;height:20px;}
   .mmoto{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);overflow:hidden;} .mmoto.loja{border-color:#34d399;}
   .leaflet-div-icon{background:transparent;border:0;}
   .leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border:1px solid var(--line2);border-radius:12px;} .leaflet-popup-tip{background:var(--card);} .leaflet-popup-content{margin:11px 13px;font-size:12.5px;}
@@ -42,11 +42,11 @@
     <div id="map"></div>
     <div class="mlegend">
       <div style="font-weight:800;color:var(--text);margin-bottom:6px">Legenda</div>
-      <div class="li"><span class="dot" style="background:#4b5468"></span>Pedido · risco baixo</div>
-      <div class="li"><span class="dot" style="background:#f5b544"></span>Pedido · risco médio</div>
-      <div class="li"><span class="dot" style="background:#f2545b"></span>Pedido · risco alto</div>
-      <div class="li"><span class="dot" style="background:#22d3ee;border-radius:5px"></span>Pedido em rota</div>
-      <div class="li"><span class="dot" style="background:#22d3ee"></span>Loja</div>
+      <div class="li"><span class="dot" style="background:#fbbf24"></span>Em preparação</div>
+      <div class="li"><span class="dot" style="background:#a855f7"></span>Aguardando agrupamento</div>
+      <div class="li"><span class="dot" style="background:#22d3ee"></span>Em rota</div>
+      <div class="li"><span style="width:18px;height:3px;background:#c084fc;border-radius:2px;flex-shrink:0"></span>Rota montada</div>
+      <div class="li"><span class="dot" style="background:#34d399;border-radius:6px"></span>Loja</div>
       <div class="li"><span class="dot" style="background:#7c3aed;border-radius:50%"></span>Motoboy</div>
       <div class="tgl" onclick="toggleMoto()"><span class="sw on" id="motoSw"></span>Mostrar motoboys</div>
     </div>
@@ -60,15 +60,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const {api,H,setConn,toast}=AudensShell;
-let map=null, layer=null, stores=[], storeMap={}, orders=[], drivers=[], showMoto=true, firstFit=true;
+let map=null, layer=null, stores=[], storeMap={}, orders=[], drivers=[], routes=[], showMoto=true, firstFit=true;
 const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
 function minsSince(iso){ if(!iso)return 0; return Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/60000)); }
 function relMin(iso){ const m=minsSince(iso); if(m<1)return 'agora'; if(m<60)return m+' min'; return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'); }
 function hav(a,b){ if(!a||!b||a.lat==null||b.lat==null)return null; const R=6371,r=d=>d*Math.PI/180; const dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng); const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
 function coord(o){ return o&&o.address&&o.address.lat!=null&&o.address.lng!=null?{lat:o.address.lat,lng:o.address.lng}:null; }
 function storeCoord(o){ const s=storeMap[o&&o.storeId]; return s&&s.lat!=null&&s.lng!=null?{lat:s.lat,lng:s.lng}:null; }
-function riskOf(o){ let sc=minsSince(o.readyAt||o.groupingStartedAt||o.createdAt); const c=coord(o),s=storeCoord(o); if(c&&s){const d=hav(s,c); if(d!=null)sc+=d*4;} return sc>=20?'alto':sc>=10?'medio':'baixo'; }
-const RISKCOL={alto:'#f2545b',medio:'#f5b544',baixo:'#4b5468'};
+// categoria do pedido por status -> cor
+const PREP=['received','confirmed','preparing'];
+const GROUP=['waiting_grouping'];
+const ROUTE=['grouped','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer'];
+const STCOL={prep:'#fbbf24',group:'#a855f7',route:'#22d3ee'};
+const STLBL={prep:'Em preparação',group:'Aguardando agrupamento',route:'Em rota'};
+function catOf(o){ if(ROUTE.includes(o.status)||o.assignedRouteId)return 'route'; if(GROUP.includes(o.status))return 'group'; if(PREP.includes(o.status))return 'prep'; return null; }
+const ROUTELINE=['#c084fc','#22d3ee','#34d399','#f5b544','#f87171','#60a5fa'];
 
 function initMap(){
   if(map)return;
@@ -77,11 +83,21 @@ function initMap(){
   layer=L.layerGroup().addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 }
-const IN_ROUTE=['sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer','grouped'];
-function orderIcon(o,inRoute){
-  const col=inRoute?'#22d3ee':RISKCOL[riskOf(o)];
+function orderIcon(o,cat){
+  const col=STCOL[cat]||'#4b5468';
   const num=String(o.displayId||o.externalOrderId||'').slice(-3);
   return L.divIcon({className:'',html:`<div class="mpin" style="background:${col}">${num}<span class="tip" style="border-top-color:${col}"></span></div>`,iconSize:[40,30],iconAnchor:[20,36],popupAnchor:[0,-34]});
+}
+// caminho da rota: loja -> pedidos na ordem do vizinho mais próximo
+function routeOrderCoords(r){
+  const os=(r.orders||[]).map(id=>orders.find(o=>o.id===id)).filter(Boolean);
+  const start=os.length?storeCoord(os[0]):null;
+  const pts=os.map(o=>coord(o)).filter(Boolean);
+  if(!pts.length)return {seq:[],start};
+  const seq=[]; const rem=[...pts]; let cur=start||rem[0];
+  if(!start){ seq.push(rem.shift()); cur=seq[0]; }
+  while(rem.length){ let bi=0,bd=Infinity; rem.forEach((p,i)=>{const d=hav(cur,p); if(d!=null&&d<bd){bd=d;bi=i;}}); seq.push(rem[bi]); cur=rem[bi]; rem.splice(bi,1); }
+  return {seq,start};
 }
 function storeIcon(){ return L.divIcon({className:'',html:`<div class="mstore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>`,iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-16]}); }
 function motoIcon(d){ const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const ini=(d.name||'?').trim().charAt(0).toUpperCase(); const img=d.photoUrl?`<img src="${d.photoUrl}" style="width:100%;height:100%;object-fit:cover">`:ini; return L.divIcon({className:'',html:`<div class="mmoto ${loja?'loja':''}">${img}</div>`,iconSize:[32,32],iconAnchor:[16,16],popupAnchor:[0,-14]}); }
@@ -92,14 +108,22 @@ function plot(){
   const pts=[];
   // lojas
   stores.forEach(s=>{ if(s.lat!=null&&s.lng!=null){ const m=L.marker([s.lat,s.lng],{icon:storeIcon(),zIndexOffset:400}).addTo(layer); m.bindPopup(`<div class="pp"><div class="t">${s.name}</div><div class="s">Loja</div></div>`); pts.push([s.lat,s.lng]); } });
-  // pedidos: aguardando agrupamento (por risco) + em rota (cyan)
-  const ready=orders.filter(o=>(o.status==='waiting_grouping'&&!o.assignedRouteId)||IN_ROUTE.includes(o.status));
+  // rotas montadas (ativas): linha ligando loja -> pedidos
+  const activeRoutes=routes.filter(r=>!['finished','canceled'].includes(r.status));
+  activeRoutes.forEach((r,ri)=>{
+    const {seq,start}=routeOrderCoords(r); if(seq.length<1)return;
+    const line=(start?[start]:[]).concat(seq).map(p=>[p.lat,p.lng]);
+    const col=ROUTELINE[ri%ROUTELINE.length];
+    L.polyline(line,{color:col,weight:4,opacity:.85,dashArray:r.status==='approved'?'6 6':null}).addTo(layer)
+      .bindPopup(`<div class="pp"><div class="t">Rota · ${(r.neighborhoods||[]).join(', ')||''}</div><div class="s">${r.driverName?('🛵 '+r.driverName):'sem motoboy'} · ${(r.orderCount||seq.length)} pedidos</div></div>`);
+  });
+  // pedidos por status (cor)
+  const show=orders.filter(o=>catOf(o));
   let noloc=0;
-  ready.forEach(o=>{ const c=coord(o); if(!c){noloc++;return;} const inRoute=IN_ROUTE.includes(o.status);
-    const m=L.marker([c.lat,c.lng],{icon:orderIcon(o,inRoute),zIndexOffset:200}).addTo(layer);
-    const bairro=(o.address&&o.address.neighborhood)||''; const risk=riskOf(o); const rc=inRoute?'#22d3ee':RISKCOL[risk];
-    const estado=inRoute?('em rota'+(o.assignedDriverId?'':'')):('aguardando · risco '+risk);
-    m.bindPopup(`<div class="pp"><div class="t">Nº ${o.displayId||o.externalOrderId||''} · ${o.storeName||''}</div><div class="s">${bairro} · ${money(o.total)}</div><div class="s">pronto há ${relMin(o.readyAt||o.groupingStartedAt||o.createdAt)}</div><div class="r" style="color:${rc}">${estado}</div></div>`);
+  show.forEach(o=>{ const c=coord(o); if(!c){noloc++;return;} const cat=catOf(o);
+    const m=L.marker([c.lat,c.lng],{icon:orderIcon(o,cat),zIndexOffset:200}).addTo(layer);
+    const bairro=(o.address&&o.address.neighborhood)||''; const rc=STCOL[cat];
+    m.bindPopup(`<div class="pp"><div class="t">Nº ${o.displayId||o.externalOrderId||''} · ${o.storeName||''}</div><div class="s">${bairro} · ${money(o.total)}</div><div class="s">${relMin(o.readyAt||o.preparingAt||o.createdAt)} atrás</div><div class="r" style="color:${rc}">${STLBL[cat]}${o.assignedDriverId?(' · '+(drivers.find(d=>d.id===o.assignedDriverId)||{}).name):''}</div></div>`);
     pts.push([c.lat,c.lng]); });
   // motoboys online com localização
   let motoN=0;
@@ -107,7 +131,7 @@ function plot(){
     m.bindPopup(`<div class="pp"><div class="t">🛵 ${d.name||''}</div><div class="s">${loja?'na loja':(d.activeRouteId?'em rota':'online')}</div></div>`); pts.push([c.lat,c.lng]); });
   const motoLoc=drivers.filter(d=>d.online&&d.currentLocation&&d.currentLocation.lat!=null).length;
   const motoOnline=drivers.filter(d=>d.online).length;
-  document.getElementById('sPed').textContent=ready.length;
+  document.getElementById('sPed').textContent=show.length;
   document.getElementById('sMoto').textContent=motoLoc;
   const notes=[];
   if(noloc)notes.push('⚠ '+noloc+' pedido(s) sem localização (endereço não geocodificado).');
@@ -121,9 +145,9 @@ async function load(){
   if(!api.hasBackend){ setConn('err'); return; }
   initMap();
   try{
-    const [so,or_,dr]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.drivers().catch(()=>[])]);
+    const [so,or_,dr,rt]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.drivers().catch(()=>[]),api.allRoutes().catch(()=>[])]);
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
-    orders=Array.isArray(or_)?or_:[]; drivers=Array.isArray(dr)?dr:[];
+    orders=Array.isArray(or_)?or_:[]; drivers=Array.isArray(dr)?dr:[]; routes=Array.isArray(rt)?rt:[];
     setConn('live');
   }catch(e){ setConn('err'); }
   plot();
