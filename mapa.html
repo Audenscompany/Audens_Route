@@ -73,7 +73,7 @@ const GROUP=['waiting_grouping'];
 const ROUTE=['grouped','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer'];
 const STCOL={prep:'#fbbf24',group:'#a855f7',route:'#22d3ee'};
 const STLBL={prep:'Em preparação',group:'Aguardando agrupamento',route:'Em rota'};
-function catOf(o){ if(ROUTE.includes(o.status)||o.assignedRouteId)return 'route'; if(GROUP.includes(o.status))return 'group'; if(PREP.includes(o.status))return 'prep'; return null; }
+function catOf(o){ if(o.status==='delivered'||o.finalized)return null; if(ROUTE.includes(o.status))return 'route'; if(GROUP.includes(o.status))return 'group'; if(PREP.includes(o.status))return 'prep'; return null; }
 const ROUTELINE=['#c084fc','#22d3ee','#34d399','#f5b544','#f87171','#60a5fa'];
 
 function initMap(){
