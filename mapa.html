@@ -22,6 +22,7 @@
   .mpin .tip{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;}
   .mstore{width:36px;height:36px;border-radius:10px;background:#22d3ee;color:#062a30;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);} .mstore svg{width:20px;height:20px;}
   .mmoto{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);overflow:hidden;} .mmoto.loja{border-color:#34d399;}
+  .leaflet-div-icon{background:transparent;border:0;}
   .leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border:1px solid var(--line2);border-radius:12px;} .leaflet-popup-tip{background:var(--card);} .leaflet-popup-content{margin:11px 13px;font-size:12.5px;}
   .pp .t{font-size:13.5px;font-weight:800;} .pp .s{color:var(--dim);font-size:11.5px;margin-top:2px;} .pp .r{margin-top:5px;font-size:11px;font-weight:800;}
   .noloc{position:absolute;bottom:12px;left:12px;z-index:500;background:rgba(245,181,68,.14);color:var(--amber);border:1px solid rgba(245,181,68,.3);border-radius:10px;padding:8px 12px;font-size:11.5px;}
@@ -44,6 +45,7 @@
       <div class="li"><span class="dot" style="background:#4b5468"></span>Pedido · risco baixo</div>
       <div class="li"><span class="dot" style="background:#f5b544"></span>Pedido · risco médio</div>
       <div class="li"><span class="dot" style="background:#f2545b"></span>Pedido · risco alto</div>
+      <div class="li"><span class="dot" style="background:#22d3ee;border-radius:5px"></span>Pedido em rota</div>
       <div class="li"><span class="dot" style="background:#22d3ee"></span>Loja</div>
       <div class="li"><span class="dot" style="background:#7c3aed;border-radius:50%"></span>Motoboy</div>
       <div class="tgl" onclick="toggleMoto()"><span class="sw on" id="motoSw"></span>Mostrar motoboys</div>
@@ -75,8 +77,9 @@ function initMap(){
   layer=L.layerGroup().addTo(map);
   setTimeout(()=>map.invalidateSize(),200);
 }
-function orderIcon(o){
-  const col=RISKCOL[riskOf(o)];
+const IN_ROUTE=['sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer','grouped'];
+function orderIcon(o,inRoute){
+  const col=inRoute?'#22d3ee':RISKCOL[riskOf(o)];
   const num=String(o.displayId||o.externalOrderId||'').slice(-3);
   return L.divIcon({className:'',html:`<div class="mpin" style="background:${col}">${num}<span class="tip" style="border-top-color:${col}"></span></div>`,iconSize:[40,30],iconAnchor:[20,36],popupAnchor:[0,-34]});
 }
@@ -89,20 +92,27 @@ function plot(){
   const pts=[];
   // lojas
   stores.forEach(s=>{ if(s.lat!=null&&s.lng!=null){ const m=L.marker([s.lat,s.lng],{icon:storeIcon(),zIndexOffset:400}).addTo(layer); m.bindPopup(`<div class="pp"><div class="t">${s.name}</div><div class="s">Loja</div></div>`); pts.push([s.lat,s.lng]); } });
-  // pedidos prontos sem rota
-  const ready=orders.filter(o=>o.status==='waiting_grouping'&&!o.assignedRouteId);
+  // pedidos: aguardando agrupamento (por risco) + em rota (cyan)
+  const ready=orders.filter(o=>(o.status==='waiting_grouping'&&!o.assignedRouteId)||IN_ROUTE.includes(o.status));
   let noloc=0;
-  ready.forEach(o=>{ const c=coord(o); if(!c){noloc++;return;} const risk=riskOf(o); const m=L.marker([c.lat,c.lng],{icon:orderIcon(o),zIndexOffset:200}).addTo(layer);
-    const bairro=(o.address&&o.address.neighborhood)||''; const rc=RISKCOL[risk];
-    m.bindPopup(`<div class="pp"><div class="t">Nº ${o.displayId||o.externalOrderId||''} · ${o.storeName||''}</div><div class="s">${bairro} · ${money(o.total)}</div><div class="s">pronto há ${relMin(o.readyAt||o.groupingStartedAt||o.createdAt)}</div><div class="r" style="color:${rc}">risco ${risk}</div></div>`);
+  ready.forEach(o=>{ const c=coord(o); if(!c){noloc++;return;} const inRoute=IN_ROUTE.includes(o.status);
+    const m=L.marker([c.lat,c.lng],{icon:orderIcon(o,inRoute),zIndexOffset:200}).addTo(layer);
+    const bairro=(o.address&&o.address.neighborhood)||''; const risk=riskOf(o); const rc=inRoute?'#22d3ee':RISKCOL[risk];
+    const estado=inRoute?('em rota'+(o.assignedDriverId?'':'')):('aguardando · risco '+risk);
+    m.bindPopup(`<div class="pp"><div class="t">Nº ${o.displayId||o.externalOrderId||''} · ${o.storeName||''}</div><div class="s">${bairro} · ${money(o.total)}</div><div class="s">pronto há ${relMin(o.readyAt||o.groupingStartedAt||o.createdAt)}</div><div class="r" style="color:${rc}">${estado}</div></div>`);
     pts.push([c.lat,c.lng]); });
   // motoboys online com localização
   let motoN=0;
   if(showMoto) drivers.forEach(d=>{ if(!d.online)return; const c=d.currentLocation; if(!c||c.lat==null)return; motoN++; const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const m=L.marker([c.lat,c.lng],{icon:motoIcon(d),zIndexOffset:300}).addTo(layer);
     m.bindPopup(`<div class="pp"><div class="t">🛵 ${d.name||''}</div><div class="s">${loja?'na loja':(d.activeRouteId?'em rota':'online')}</div></div>`); pts.push([c.lat,c.lng]); });
+  const motoLoc=drivers.filter(d=>d.online&&d.currentLocation&&d.currentLocation.lat!=null).length;
+  const motoOnline=drivers.filter(d=>d.online).length;
   document.getElementById('sPed').textContent=ready.length;
-  document.getElementById('sMoto').textContent=drivers.filter(d=>d.online&&d.currentLocation&&d.currentLocation.lat!=null).length;
-  const nl=document.getElementById('noloc'); if(noloc){ nl.style.display='block'; nl.textContent='⚠ '+noloc+' pedido(s) sem localização no mapa (endereço não geocodificado).'; } else nl.style.display='none';
+  document.getElementById('sMoto').textContent=motoLoc;
+  const notes=[];
+  if(noloc)notes.push('⚠ '+noloc+' pedido(s) sem localização (endereço não geocodificado).');
+  if(showMoto&&motoLoc===0)notes.push(motoOnline?('⚠ '+motoOnline+' motoboy(s) online, mas sem GPS ativo — peça para abrirem o app com a localização ligada.'):'Nenhum motoboy online no momento.');
+  const nl=document.getElementById('noloc'); if(notes.length){ nl.style.display='block'; nl.innerHTML=notes.join('<br>'); } else nl.style.display='none';
   if(firstFit && pts.length){ try{ map.fitBounds(pts,{padding:[50,50],maxZoom:15}); }catch(e){} firstFit=false; }
 }
 function toggleMoto(){ showMoto=!showMoto; document.getElementById('motoSw').classList.toggle('on',showMoto); plot(); }
