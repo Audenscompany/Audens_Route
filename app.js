@@ -123,6 +123,8 @@
     drivers:()=>j(API+'/api/drivers'),
     driverQueue:()=>j(API+'/api/drivers/queue'),
     setDriverStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
+    driverArrive:(id,arrived)=>j(API+'/api/drivers/'+id+'/arrive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arrived:arrived!==false})}),
+    reorderQueue:(ids)=>j(API+'/api/drivers/queue/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})}),
     driverRoute:(id)=>j(API+'/api/drivers/'+id+'/route'),
     driverHistory:(id)=>j(API+'/api/drivers/'+id+'/history'),
     // ciclo da rota
