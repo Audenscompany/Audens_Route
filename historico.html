@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Histórico</title>
+<style>
+  .hctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+  .chip2{border:1px solid var(--line);background:var(--card);color:var(--dim);border-radius:999px;padding:8px 15px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  .chip2.on{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;}
+  .hctl input[type=date]{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 11px;font-size:12.5px;font-family:inherit;}
+  .hsearch{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 12px;min-width:220px;} .hsearch svg{width:15px;height:15px;color:var(--faint);} .hsearch input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;padding:9px 0;font-family:inherit;}
+  .hstat{margin-left:auto;font-size:12px;color:var(--faint);}
+  table.ht{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  table.ht th{font-size:10.5px;color:var(--faint);font-weight:700;text-align:left;padding:11px 12px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);background:var(--card2);}
+  table.ht td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle;}
+  table.ht tr:last-child td{border-bottom:none;}
+  .oid{font-weight:800;color:var(--violet3);} .lg{display:inline-flex;align-items:center;gap:7px;} .lg .im{width:22px;height:22px;border-radius:6px;overflow:hidden;flex-shrink:0;} .lg img{width:100%;height:100%;object-fit:cover;}
+  .badge{font-size:10px;font-weight:800;border-radius:6px;padding:3px 8px;display:inline-block;} .badge.fin{color:var(--green);background:rgba(52,211,153,.14);} .badge.ent{color:var(--faint);background:var(--card2);}
+  .hb{border:1px solid var(--line);background:var(--card2);color:var(--dim);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-right:5px;} .hb:hover{border-color:var(--violet);color:var(--text);} .hb.g{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;}
+  .empty{color:var(--faint);font-size:13px;text-align:center;padding:30px;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Histórico</h1><p>Pedidos entregues e finalizados. Consulte, reabra ou corrija o motoboy.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <div class="hctl">
+    <div class="chip2" id="c_hoje" onclick="setPreset('hoje')">Hoje</div>
+    <div class="chip2" id="c_ontem" onclick="setPreset('ontem')">Ontem</div>
+    <input type="date" id="dayInput" onchange="setDay(this.value)" />
+    <div class="hsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><input id="q" placeholder="Buscar Nº, cliente, motoboy…" oninput="render()" /></div>
+    <div class="hstat" id="hstat"></div>
+  </div>
+  <div id="list"><div class="empty">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='historico';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,H,setConn,toast}=AudensShell;
+let items=[],drivers=[],day='',swapForId=null;
+const ROLE=(()=>{try{return sessionStorage.getItem('audens_role')||'';}catch(e){return '';}})();
+const canEdit=ROLE==='admin'||ROLE==='operator';
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+const hhmm=(iso)=>{if(!iso)return '—';const d=new Date(iso);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+function todayKey(){ return new Date().toLocaleDateString('en-CA'); }
+function keyMinus(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('en-CA'); }
+function driverName(id){ const d=drivers.find(x=>x.id===id); return d?d.name:'sem motoboy'; }
+function storeLogo(o){ const n=(o.storeName||'').toLowerCase(); return n.includes('pizz')?AudensShell.LOGO.pizza:(n.includes('burg')?AudensShell.LOGO.burger:AudensShell.LOGO.store); }
+
+function setPreset(p){ day=p==='ontem'?keyMinus(1):todayKey(); document.getElementById('dayInput').value=day; syncChips(); load(); }
+function setDay(v){ day=v||todayKey(); syncChips(); load(); }
+function syncChips(){ document.getElementById('c_hoje').classList.toggle('on',day===todayKey()); document.getElementById('c_ontem').classList.toggle('on',day===keyMinus(1)); }
+
+function render(){
+  const box=document.getElementById('list');
+  const q=(document.getElementById('q').value||'').trim().toLowerCase();
+  let list=items;
+  if(q) list=items.filter(o=>[(o.displayId||''),(o.externalOrderId||''),(o.customer&&o.customer.name)||'',o.storeName||'',(o.address&&o.address.neighborhood)||'',driverName(o.assignedDriverId)].join(' ').toLowerCase().includes(q));
+  document.getElementById('hstat').textContent=list.length+' pedido(s)';
+  if(!list.length){ box.innerHTML='<div class="empty">Nenhum pedido finalizado/entregue nesse filtro.</div>'; return; }
+  box.innerHTML=`<table class="ht"><thead><tr><th>Pedido</th><th>Loja</th><th>Bairro</th><th>Valor</th><th>Hora</th><th>Motoboy</th><th>Status</th><th>Ações</th></tr></thead><tbody>`
+    + list.map(o=>{
+      const bairro=(o.address&&o.address.neighborhood)||'—';
+      const when=o.finalizedAt||o.deliveredAt||o.updatedAt;
+      const acts = canEdit ? (
+        (o.finalized?`<button class="hb" onclick="reabrir('${o.id}')">reabrir</button>`:`<button class="hb g" onclick="finalizar('${o.id}')">finalizar</button>`)
+        + `<button class="hb" onclick="askSwap('${o.id}')">trocar motoboy</button>`
+      ) : '<span style="color:var(--faint);font-size:11px">—</span>';
+      return `<tr>
+        <td><span class="oid">Nº ${o.displayId||o.externalOrderId||''}</span></td>
+        <td><span class="lg"><span class="im">${(o.storeLogoUrl?`<img src="${o.storeLogoUrl}">`:storeLogo(o))}</span>${o.storeName||''}</span></td>
+        <td>${bairro}</td>
+        <td>${money(o.total)}</td>
+        <td>${hhmm(when)}</td>
+        <td>${o.assignedDriverId?driverName(o.assignedDriverId):'<span style="color:var(--faint)">sem motoboy</span>'}</td>
+        <td>${o.finalized?'<span class="badge fin">Finalizado</span>':'<span class="badge ent">Entregue</span>'}</td>
+        <td>${acts}</td>
+      </tr>`;
+    }).join('') + `</tbody></table>`;
+}
+async function reabrir(id){ try{ await api.finalizeOrder(id,ROLE,false); toast('Pedido reaberto (volta para Entregue)'); await load(); }catch(e){ toast('Erro: '+e.message); } }
+async function finalizar(id){ try{ await api.finalizeOrder(id,ROLE,true); toast('Pedido finalizado'); await load(); }catch(e){ toast('Erro: '+e.message); } }
+
+// trocar motoboy (corrige o financeiro)
+function askSwap(id){ swapForId=id; renderSwap(); }
+function closeSwap(){ swapForId=null; renderSwap(); }
+function renderSwap(){
+  let ov=document.getElementById('swapPick');
+  if(!swapForId){ if(ov)ov.remove(); return; }
+  const o=items.find(x=>x.id===swapForId); const cur=o&&o.assignedDriverId;
+  if(!ov){ ov=document.createElement('div'); ov.id='swapPick'; document.body.appendChild(ov); }
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9999';
+  const list=drivers.length?drivers.map(d=>`<button onclick="doSwap('${d.id}')" ${d.id===cur?'disabled':''} style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2);border:1px solid ${d.id===cur?'var(--violet)':'var(--line)'};color:var(--text);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:${d.id===cur?'default':'pointer'};opacity:${d.id===cur?'.6':'1'};font-size:13.5px"><span style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800">${(d.name||'?').trim().charAt(0).toUpperCase()}</span>${d.name}${d.id===cur?' <span style="color:var(--faint);font-size:11px">(atual)</span>':''}</button>`).join(''):'<div style="color:var(--faint);padding:10px">Nenhum motoboy.</div>';
+  ov.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(360px,92vw)" onclick="event.stopPropagation()"><div style="font-size:15px;font-weight:800;margin-bottom:3px">Trocar motoboy · Nº ${o?(o.displayId||o.externalOrderId):''}</div><div style="font-size:12px;color:var(--faint);margin-bottom:14px">Corrige quem recebe a taxa desta entrega.</div>${list}<button onclick="closeSwap()" style="width:100%;background:none;border:none;color:var(--faint);padding:8px;margin-top:4px;cursor:pointer;font-size:12.5px">cancelar</button></div>`;
+  ov.onclick=closeSwap;
+}
+async function doSwap(driverId){ const id=swapForId; if(!id)return; try{ await api.reassignDriver(id,driverId); swapForId=null; renderSwap(); toast('Motoboy alterado para '+driverName(driverId)); await load(); }catch(e){ toast('Erro: '+e.message); } }
+
+async function load(){
+  if(!api.hasBackend){ setConn('err'); return; }
+  if(!day){ day=todayKey(); document.getElementById('dayInput').value=day; syncChips(); }
+  try{
+    const [hs,dr]=await Promise.all([api.ordersHistory(day).catch(()=>[]),api.drivers().catch(()=>[])]);
+    items=Array.isArray(hs)?hs:[]; drivers=Array.isArray(dr)?dr:[]; setConn('live');
+  }catch(e){ setConn('err'); }
+  render();
+}
+load(); setInterval(load,20000);
+</script>
+</body>
+</html>
