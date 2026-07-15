@@ -42,7 +42,7 @@
 <script src="app.js"></script>
 <script>
 const {api,H,setConn,toast}=AudensShell;
-let items=[],drivers=[],day='',swapForId=null;
+let items=[],drivers=[],stores=[],storeMap={},day='',swapForId=null;
 const ROLE=(()=>{try{return sessionStorage.getItem('audens_role')||'';}catch(e){return '';}})();
 const canEdit=ROLE==='admin'||ROLE==='operator';
 const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
@@ -73,7 +73,7 @@ function render(){
       ) : '<span style="color:var(--faint);font-size:11px">—</span>';
       return `<tr>
         <td><span class="oid">Nº ${o.displayId||o.externalOrderId||''}</span></td>
-        <td><span class="lg"><span class="im">${(o.storeLogoUrl?`<img src="${o.storeLogoUrl}">`:storeLogo(o))}</span>${o.storeName||''}</span></td>
+        <td><span class="lg"><span class="im">${H.logoFor(o,storeMap)}</span>${o.storeName||''}</span></td>
         <td>${bairro}</td>
         <td>${money(o.total)}</td>
         <td>${hhmm(when)}</td>
@@ -105,8 +105,9 @@ async function load(){
   if(!api.hasBackend){ setConn('err'); return; }
   if(!day){ day=todayKey(); document.getElementById('dayInput').value=day; syncChips(); }
   try{
-    const [hs,dr]=await Promise.all([api.ordersHistory(day).catch(()=>[]),api.drivers().catch(()=>[])]);
-    items=Array.isArray(hs)?hs:[]; drivers=Array.isArray(dr)?dr:[]; setConn('live');
+    const [hs,dr,so]=await Promise.all([api.ordersHistory(day).catch(()=>[]),api.drivers().catch(()=>[]),api.stores().catch(()=>[])]);
+    items=Array.isArray(hs)?hs:[]; drivers=Array.isArray(dr)?dr:[];
+    stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s); setConn('live');
   }catch(e){ setConn('err'); }
   render();
 }
