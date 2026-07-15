@@ -346,8 +346,8 @@ function renderArrive(){
   const grad='background:linear-gradient(120deg,#7c3aed,#a855f7);color:#fff;border:none;box-shadow:0 8px 22px rgba(124,58,237,.35)';
   const dis='background:var(--card2);color:var(--faint);border:1px solid var(--line);opacity:.85;cursor:default';
   if(!('geolocation' in navigator)){ box.innerHTML=`<div style="text-align:center;color:var(--faint);font-size:12px">Sem GPS neste aparelho — peça ao operador para te colocar na fila</div>`; return; }
-  if(geoState&&geoState.error){ box.innerHTML=btn(dis,'📍 Ative a localização para entrar na fila','disabled'); return; }
-  if(!geoState){ box.innerHTML=btn(dis,'Buscando sua localização…','disabled'); return; }
+  if(geoState&&geoState.error){ box.innerHTML=`<button onclick="requestGeo()" style="width:100%;${grad};border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer">📍 Ativar localização</button><div style="text-align:center;margin-top:8px"><a onclick="showGeoHelp()" style="color:var(--faint);font-size:12px;text-decoration:underline;cursor:pointer">não está funcionando? como ativar ›</a></div>`; return; }
+  if(!geoState){ box.innerHTML=`<button onclick="requestGeo()" style="width:100%;${dis};border-radius:12px;padding:14px;font-size:15px;font-weight:800">Buscando sua localização…</button>`; return; }
   if(!geoState.hasStoreLocation){ box.innerHTML=`<div style="text-align:center;color:var(--faint);font-size:12px">Loja sem endereço cadastrado — avise o operador</div>`; return; }
   const radius=geoState.radius||150, maxM=Math.round(radius*1.6);
   const near=geoState.inside || (geoState.distanceMeters!=null && geoState.distanceMeters<=maxM);
@@ -383,12 +383,43 @@ function sendLocation(){
   }, err=>{ geoState={error:err.code}; renderGeo(); }, {enableHighAccuracy:true,timeout:12000,maximumAge:15000});
 }
 function startGeo(){ if(geoTimer)return; sendLocation(); geoTimer=setInterval(()=>{ if(driver&&driver.online)sendLocation(); else stopGeo(); },20000); }
+// pedido manual de permissão (toque do motoboy) — no iPhone o prompt costuma exigir um toque
+function requestGeo(){
+  if(!('geolocation' in navigator)){ toast('Este aparelho não tem GPS'); return; }
+  if(!driver){ toast('Motoboy não identificado'); return; }
+  toast('Buscando sua localização…'); geoState=null; renderGeo(); renderArrive();
+  navigator.geolocation.getCurrentPosition(async p=>{
+    try{ geoState=await api.location(driver.id,p.coords.latitude,p.coords.longitude); }catch(e){}
+    if(!geoTimer&&driver&&driver.online) startGeo();
+    renderGeo(); renderArrive();
+  }, err=>{
+    geoState={error:err.code}; renderGeo(); renderArrive();
+    if(err.code===1){ showGeoHelp(); } else { toast('Não consegui pegar o GPS — tente de novo ao ar livre'); }
+  }, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+function showGeoHelp(){
+  const iOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  const steps=iOS
+    ? ['Abra os <b>Ajustes</b> do iPhone','Vá em <b>Privacidade e Segurança › Serviços de Localização</b> e deixe <b>ligado</b>','Ainda em Serviços de Localização, toque em <b>Safari</b> (ou no navegador que você usa) e escolha <b>Ao Usar o App</b>','Toque também em <b>Localização Exata: ligada</b>','Volte para esta tela e toque em <b>Ativar localização</b>','Quando aparecer o aviso do navegador, toque em <b>Permitir</b>']
+    : ['Abra as <b>Configurações</b> do celular','Ative a <b>Localização</b> (GPS)','Em <b>Apps › Chrome</b> (ou seu navegador) › Permissões, deixe a <b>Localização</b> permitida','Volte para esta tela e toque em <b>Ativar localização</b>','Quando aparecer o aviso, toque em <b>Permitir</b>'];
+  let ov=document.getElementById('geoHelp');
+  if(!ov){ ov=document.createElement('div'); ov.id='geoHelp'; document.body.appendChild(ov); }
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.66);display:grid;place-items:center;z-index:99999;padding:18px';
+  ov.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;width:min(400px,94vw);max-height:88vh;overflow:auto" onclick="event.stopPropagation()">
+    <div style="font-size:17px;font-weight:800;margin-bottom:4px">📍 Como ativar a localização</div>
+    <div style="font-size:12.5px;color:var(--faint);margin-bottom:16px">Ela é usada só para te colocar na fila da loja e mostrar sua posição durante a rota.</div>
+    <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:11px;font-size:13.5px;line-height:1.45">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    <button onclick="closeGeoHelp()" style="width:100%;background:linear-gradient(120deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:800;margin-top:18px;cursor:pointer">Entendi</button>
+  </div>`;
+  ov.onclick=closeGeoHelp;
+}
+function closeGeoHelp(){ const ov=document.getElementById('geoHelp'); if(ov)ov.remove(); }
 function stopGeo(){ if(geoTimer){clearInterval(geoTimer);geoTimer=null;} geoState=null; renderGeo(); }
 function renderGeo(){
   const el=document.getElementById('geoStatus'); if(!el)return;
   if(!driver||!driver.online){ el.innerHTML=''; return; }
   if(!('geolocation' in navigator)){ el.innerHTML='<span style="color:var(--faint)">Este aparelho não tem GPS disponível</span>'; return; }
-  if(geoState&&geoState.error){ el.innerHTML='<span style="color:var(--amber)">📍 Ative a localização do celular para entrar na fila por GPS</span>'; return; }
+  if(geoState&&geoState.error){ el.innerHTML='<span onclick="showGeoHelp()" style="color:var(--amber);cursor:pointer;text-decoration:underline">📍 Ative a localização do celular para entrar na fila por GPS ›</span>'; return; }
   if(!geoState){ el.innerHTML='<span style="color:var(--faint)">Buscando sua localização…</span>'; return; }
   if(!geoState.hasStoreLocation){ el.innerHTML='<span style="color:var(--faint)">Peça ao operador para cadastrar o endereço da loja (fila por GPS)</span>'; return; }
   if(geoState.inside){ el.innerHTML='<span style="color:var(--green)">✓ Você está na loja — na fila</span>'; }
