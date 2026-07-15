@@ -33,13 +33,14 @@
     users:S('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.3 2.5-5 5.5-5s5.5 1.7 5.5 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M18 14.5c2.2.5 3.5 2 3.5 4.5"/>'),
     cash:S('<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9v6M18 9v6"/>'),
     mapa:S('<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/>'),
+    hist:S('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/>'),
   };
   const LOGO={
     burger:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#3a2a10"/><path d="M8 17c0-4.4 5.4-7.5 12-7.5S32 12.6 32 17H8Z" fill="#f5b544"/><rect x="8" y="19" width="24" height="3.4" rx="1.5" fill="#3aa35a"/><rect x="8" y="21.4" width="24" height="3.4" rx="1.5" fill="#d3452e"/><path d="M8 25c0 3.6 5.4 6 12 6s12-2.4 12-6v-1.2H8V25Z" fill="#d79b46"/></svg>`,
     pizza:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#3a1414"/><path d="M20 7 33 31a28 28 0 0 1-26 0L20 7Z" fill="#f0b24c"/><path d="M20 12 30 29a22 22 0 0 1-20 0L20 12Z" fill="#e8632e"/><circle cx="17.5" cy="21" r="2.1" fill="#b02020"/><circle cx="23" cy="25" r="2.1" fill="#b02020"/></svg>`,
     store:`<svg viewBox="0 0 40 40" style="width:100%;height:100%"><rect width="40" height="40" rx="10" fill="#1c1730"/><path d="M11 18l1.5-6h15l1.5 6M11 18h18v1.6a3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-7 0 3.5 3.5 0 0 1-4 0V18ZM13 22v7h14v-7" stroke="#c084fc" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`,
   };
-  const NAV=[['home','Dashboard','dashboard.html','dashboard'],['orders','Pedidos','pedidos.html','pedidos'],['group','Agrupamento','agrupamento.html','agrupamento'],['mapa','Mapa','mapa.html','mapa'],['route','Rotas','rotas.html','rotas'],['moto','Motoboys','motoboys.html','motoboys'],['chart','Métricas','metricas.html','metricas'],['cash','Financeiro','financeiro.html','financeiro'],['store','Lojas','cardapios.html','lojas'],['users','Usuários','usuarios.html','usuarios'],['gear','Configurações','configuracoes.html','config']];
+  const NAV=[['home','Dashboard','dashboard.html','dashboard'],['orders','Pedidos','pedidos.html','pedidos'],['group','Agrupamento','agrupamento.html','agrupamento'],['mapa','Mapa','mapa.html','mapa'],['route','Rotas','rotas.html','rotas'],['moto','Motoboys','motoboys.html','motoboys'],['chart','Métricas','metricas.html','metricas'],['cash','Financeiro','financeiro.html','financeiro'],['hist','Histórico','historico.html','historico'],['store','Lojas','cardapios.html','lojas'],['users','Usuários','usuarios.html','usuarios'],['gear','Configurações','configuracoes.html','config']];
 
   function logoHtml(){
     // usa logo.png se existir; senão, o logo padrão em SVG+texto
@@ -108,6 +109,7 @@
     deliverManual:(id,driverId)=>j(`${API}/api/orders/${id}/deliver-manual`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
     finalizeOrder:(id,by,finalized)=>j(`${API}/api/orders/${id}/finalize`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({by:by||'',finalized:finalized!==false})}),
     reassignDriver:(id,driverId)=>j(`${API}/api/orders/${id}/reassign-driver`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({driverId})}),
+    ordersHistory:(day)=>j(API+'/api/orders/history'+(day?('?day='+day):'')),
     webhookUrl:(s)=>`${API}/api/webhooks/orders/${s.id}?key=${s.webhookSecret}`,
     routes:()=>j(API+'/api/routes?active=true'),
     routeSuggestions:()=>j(API+'/api/routes/suggestions'),
@@ -160,7 +162,6 @@
     {nm:'Aguardando agrupamento',color:'#a855f7',st:['waiting_grouping','grouped']},
     {nm:'Em rota',color:'#22d3ee',st:['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']},
     {nm:'Entregue',color:'#7a869a',st:['delivered'],pred:o=>!o.finalized},
-    {nm:'Finalizado',color:'#34d399',st:['delivered'],pred:o=>!!o.finalized},
   ];
   const NEXT={received:['preparing','Iniciar preparo','#7c3aed'],confirmed:['preparing','Iniciar preparo','#7c3aed'],preparing:['ready','Marcar pronto','#34d399']};
 
