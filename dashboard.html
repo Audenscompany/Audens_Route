@@ -45,9 +45,27 @@ function computeAlerts(){
   routes.forEach(r=>{ if(r.status==='sent_to_driver'){ const m=minsSince(r.assignedAt); if(m>=3)a.push({lvl:'warn',txt:`Rota ${(r.neighborhoods||[]).join(', ')||''} aguardando aceitação (${m} min)`}); } });
   return a.slice(0,12);
 }
+let qDragIdx=null;
+function qDragStart(e,i){ qDragIdx=i; if(e.dataTransfer)e.dataTransfer.effectAllowed='move'; }
+function qDragOver(e){ e.preventDefault(); }
+function qDrop(e,i){ e.preventDefault(); if(qDragIdx==null||qDragIdx===i){qDragIdx=null;return;} moveInQueue(qDragIdx,i); qDragIdx=null; }
+function qMove(i,dir){ const j=i+dir; if(j<0||j>=queue.length)return; moveInQueue(i,j); }
+function moveInQueue(from,to){ const arr=[...queue]; const [it]=arr.splice(from,1); arr.splice(to,0,it); queue=arr; renderRail(); persistQueue(); }
+async function persistQueue(){ try{ await api.reorderQueue(queue.map(d=>d.id)); }catch(e){ toast('Erro ao salvar ordem da fila'); } }
 function renderRail(){
   const fila=document.getElementById('fila');
-  fila.innerHTML=queue.length?queue.map((d,i)=>`<div class="q"><span class="pos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div><div><div class="nm">${d.name||''}</div></div><span class="eta" style="color:${d.isInsideStoreGeofence?'var(--green)':'var(--faint)'}">${d.isInsideStoreGeofence?'na loja':(d.distanceToStoreMeters!=null?d.distanceToStoreMeters+'m':'online')}</span></div>`).join(''):`<div class="panel-empty">Nenhum motoboy online</div>`;
+  fila.innerHTML=queue.length?queue.map((d,i)=>{
+    const na=d.atStore||d.isInsideStoreGeofence;
+    const loc=na?'na loja':(d.distanceToStoreMeters!=null?d.distanceToStoreMeters+'m':'online');
+    return `<div class="q" draggable="true" ondragstart="qDragStart(event,${i})" ondragover="qDragOver(event)" ondrop="qDrop(event,${i})" ondragend="qDragIdx=null" style="cursor:grab">
+      <span class="pos">${i+1}</span><div class="av">${(d.name||'?').trim().charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0"><div class="nm">${d.name||''}</div></div>
+      <span class="eta" style="color:${na?'var(--green)':'var(--faint)'}">${loc}</span>
+      <span style="display:flex;flex-direction:column;gap:2px;margin-left:7px">
+        <button onclick="qMove(${i},-1)" ${i===0?'disabled':''} style="background:none;border:none;color:${i===0?'#3a3550':'var(--dim)'};cursor:pointer;padding:0 2px;font-size:11px;line-height:1">▲</button>
+        <button onclick="qMove(${i},1)" ${i===queue.length-1?'disabled':''} style="background:none;border:none;color:${i===queue.length-1?'#3a3550':'var(--dim)'};cursor:pointer;padding:0 2px;font-size:11px;line-height:1">▼</button>
+      </span></div>`;
+  }).join(''):`<div class="panel-empty">Nenhum motoboy online</div>`;
   const al=computeAlerts();
   document.getElementById('alertCount').textContent=al.length?al.length:'';
   const el=document.getElementById('alerts');

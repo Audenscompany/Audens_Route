@@ -149,6 +149,7 @@
         </div>
       </div>
       <div id="geoStatus" style="font-size:12px;margin-top:11px;text-align:center"></div>
+      <div id="arriveBox" style="margin-top:11px"></div>
     </div>
     <div class="card store-card" id="waitCard">
       <div class="store-head">
@@ -271,6 +272,7 @@ const api={
   patchDriver:(id,b)=>j(API+'/api/drivers/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
   setStatus:(id,online)=>j(API+'/api/drivers/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({online})}),
   location:(id,lat,lng)=>j(API+'/api/drivers/'+id+'/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng})}),
+  arrive:(id,arrived)=>j(API+'/api/drivers/'+id+'/arrive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({arrived:arrived!==false})}),
   route:(id)=>j(API+'/api/drivers/'+id+'/route'),
   history:(id)=>j(API+'/api/drivers/'+id+'/history'),
   settings:()=>j(API+'/api/settings'),
@@ -332,6 +334,38 @@ function renderStatus(){
   const av=document.getElementById('av'), init=document.getElementById('avInit');
   if(driver&&driver.photoUrl){ init.style.display='none'; if(!av.querySelector('img')){const im=document.createElement('img');im.src=driver.photoUrl;av.insertBefore(im,av.firstChild);} else av.querySelector('img').src=driver.photoUrl; }
   else if(driver){ init.style.display=''; init.textContent=(driver.name||'M').trim().charAt(0).toUpperCase(); const im=av.querySelector('img'); if(im)im.remove(); }
+  renderArrive();
+}
+function renderArrive(){
+  const box=document.getElementById('arriveBox'); if(!box)return;
+  if(!driver||!driver.online){ box.innerHTML=''; return; }
+  const atStore=!!(driver.isInsideStoreGeofence||driver.manualAtStore);
+  const btn=(bg,txt,extra='')=>`<button onclick="setArrive(true)" ${extra} style="width:100%;${bg};border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer">${txt}</button>`;
+  if(atStore){ box.innerHTML=`<button onclick="setArrive(false)" style="width:100%;background:rgba(52,211,153,.14);color:var(--green);border:1px solid rgba(52,211,153,.35);border-radius:12px;padding:13px;font-size:14px;font-weight:800;cursor:pointer">✓ Estou na loja — na fila <span style="font-weight:600;color:var(--dim);font-size:12px">(toque para sair)</span></button>`; return; }
+  // não está na loja: libera o botão só quando o GPS confirma que está perto
+  const grad='background:linear-gradient(120deg,#7c3aed,#a855f7);color:#fff;border:none;box-shadow:0 8px 22px rgba(124,58,237,.35)';
+  const dis='background:var(--card2);color:var(--faint);border:1px solid var(--line);opacity:.85;cursor:default';
+  if(!('geolocation' in navigator)){ box.innerHTML=`<div style="text-align:center;color:var(--faint);font-size:12px">Sem GPS neste aparelho — peça ao operador para te colocar na fila</div>`; return; }
+  if(geoState&&geoState.error){ box.innerHTML=btn(dis,'📍 Ative a localização para entrar na fila','disabled'); return; }
+  if(!geoState){ box.innerHTML=btn(dis,'Buscando sua localização…','disabled'); return; }
+  if(!geoState.hasStoreLocation){ box.innerHTML=`<div style="text-align:center;color:var(--faint);font-size:12px">Loja sem endereço cadastrado — avise o operador</div>`; return; }
+  const radius=geoState.radius||150, maxM=Math.round(radius*1.6);
+  const near=geoState.inside || (geoState.distanceMeters!=null && geoState.distanceMeters<=maxM);
+  box.innerHTML=near
+    ? btn(grad,'📍 Cheguei na loja')
+    : btn(dis,`A ${geoState.distanceMeters} m da loja — aproxime-se (${maxM} m)`,'disabled');
+}
+function freshLocation(){
+  return new Promise(resolve=>{
+    if(!navigator.geolocation||!driver)return resolve();
+    navigator.geolocation.getCurrentPosition(async p=>{ try{ geoState=await api.location(driver.id,p.coords.latitude,p.coords.longitude); }catch(e){} resolve(); }, ()=>resolve(), {enableHighAccuracy:true,timeout:8000,maximumAge:0});
+  });
+}
+async function setArrive(v){
+  if(!driver)return;
+  if(v){ await freshLocation(); renderArrive(); } // envia localização atual antes de validar
+  try{ driver=await api.arrive(driver.id,v); renderStatus(); toast(v?'Você entrou na fila da loja':'Você saiu da loja'); load(); }
+  catch(e){ toast(e.message||'Erro'); }
 }
 async function toggleOnline(){
   if(!driver){toast('Motoboy não identificado');return;}
