@@ -154,6 +154,9 @@
     rel:(iso)=>{if(!iso)return '';const m=Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/60000));if(m<1)return 'agora';if(m<60)return m+' min';return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0');},
     logoFor:(o,storeMap)=>{const s=storeMap&&storeMap[o.storeId];if(s&&s.logoUrl)return `<img src="${s.logoUrl}">`;const n=(o.storeName||'').toLowerCase();if(n.includes('burg'))return LOGO.burger;if(n.includes('pizz'))return LOGO.pizza;return LOGO.store;},
     storeBadge:(s)=>{if(s.logoUrl)return `<img src="${s.logoUrl}">`;const t=(s.type||'').toLowerCase();if(t.includes('hambur'))return LOGO.burger;if(t.includes('pizz'))return LOGO.pizza;return LOGO.store;},
+    payLabel:(m)=>{m=(m||'').toLowerCase();if(m.includes('pix'))return 'Pix';if(m.includes('dinh')||m.includes('cash'))return 'Dinheiro';if(m.includes('cred'))return 'Crédito';if(m.includes('deb'))return 'Débito';if(m.includes('card')||m.includes('cart'))return 'Cartão';return m?m:'';},
+    isPaid:(o)=>{const t=(o.paymentType||'').toLowerCase(),s=(o.paymentStatus||'').toLowerCase();return t==='online'||s==='paid'||s==='approved'||s==='completed';},
+    payBadge:(o)=>{const paid=H.isPaid(o);const pm=H.payLabel(o.paymentMethod);const troco=Number(o.changeFor)||0;const tr=(!paid&&troco>0)?(' · troco p/ '+H.money(troco)):'';const st=paid?'background:rgba(52,211,153,.13);color:#34d399':'background:rgba(245,181,68,.14);color:#f5b544';const txt=paid?('Pago online'+(pm?(' · '+pm):'')):('A cobrar'+(pm?(' · '+pm):'')+tr);return `<div style="margin-top:7px;font-size:10.5px;font-weight:800;border-radius:7px;padding:5px 9px;${st};display:inline-flex;align-items:center;gap:5px;line-height:1.3">${paid?'✓':'💵'} ${txt}</div>`;},
   };
   const COLS=[
     {nm:'Recebido',color:'#60a5fa',st:['received','confirmed']},
