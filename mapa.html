@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<title>Audens Route — Mapa</title>
+<style>
+  .maphead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+  .mstats{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;}
+  .mstat{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 13px;font-size:12px;color:var(--dim);} .mstat b{color:var(--text);font-size:15px;}
+  .mapwrap{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  #map{height:calc(100vh - 190px);min-height:440px;width:100%;background:#0d0a18;}
+  .mlegend{position:absolute;top:12px;left:12px;z-index:500;background:rgba(20,15,34,.92);border:1px solid var(--line2);border-radius:12px;padding:11px 13px;font-size:11.5px;color:var(--dim);backdrop-filter:blur(6px);}
+  .mlegend .li{display:flex;align-items:center;gap:8px;margin:5px 0;} .mlegend .dot{width:12px;height:12px;border-radius:4px;flex-shrink:0;}
+  .mlegend .tgl{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);display:flex;align-items:center;gap:7px;cursor:pointer;color:var(--text);font-weight:700;}
+  .mlegend .sw{width:32px;height:18px;border-radius:999px;background:#3a3f4b;position:relative;transition:.2s;} .mlegend .sw.on{background:var(--green);} .mlegend .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s;} .mlegend .sw.on::after{left:16px;}
+  /* pinos */
+  .mpin{position:relative;min-width:30px;padding:4px 8px;border-radius:8px;color:#fff;font-size:12px;font-weight:800;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.5);white-space:nowrap;border:1.5px solid rgba(255,255,255,.65);}
+  .mpin .tip{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;}
+  .mstore{width:36px;height:36px;border-radius:10px;background:#22d3ee;color:#062a30;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);} .mstore svg{width:20px;height:20px;}
+  .mmoto{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);overflow:hidden;} .mmoto.loja{border-color:#34d399;}
+  .leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border:1px solid var(--line2);border-radius:12px;} .leaflet-popup-tip{background:var(--card);} .leaflet-popup-content{margin:11px 13px;font-size:12.5px;}
+  .pp .t{font-size:13.5px;font-weight:800;} .pp .s{color:var(--dim);font-size:11.5px;margin-top:2px;} .pp .r{margin-top:5px;font-size:11px;font-weight:800;}
+  .noloc{position:absolute;bottom:12px;left:12px;z-index:500;background:rgba(245,181,68,.14);color:var(--amber);border:1px solid rgba(245,181,68,.3);border-radius:10px;padding:8px 12px;font-size:11.5px;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="maphead">
+    <div><h1 style="margin:0">Mapa</h1><p style="margin:4px 0 0;color:var(--dim);font-size:13px">Pedidos prontos, loja e motoboys — em ruas reais.</p></div>
+    <div class="mstats">
+      <div class="mstat">Pedidos: <b id="sPed">0</b></div>
+      <div class="mstat">Motoboys: <b id="sMoto">0</b></div>
+      <button class="btn" onclick="load()">↻ Atualizar</button>
+    </div>
+  </div>
+  <div class="mapwrap">
+    <div id="map"></div>
+    <div class="mlegend">
+      <div style="font-weight:800;color:var(--text);margin-bottom:6px">Legenda</div>
+      <div class="li"><span class="dot" style="background:#4b5468"></span>Pedido · risco baixo</div>
+      <div class="li"><span class="dot" style="background:#f5b544"></span>Pedido · risco médio</div>
+      <div class="li"><span class="dot" style="background:#f2545b"></span>Pedido · risco alto</div>
+      <div class="li"><span class="dot" style="background:#22d3ee"></span>Loja</div>
+      <div class="li"><span class="dot" style="background:#7c3aed;border-radius:50%"></span>Motoboy</div>
+      <div class="tgl" onclick="toggleMoto()"><span class="sw on" id="motoSw"></span>Mostrar motoboys</div>
+    </div>
+    <div class="noloc" id="noloc" style="display:none"></div>
+  </div>
+</template>
+
+<script>window.PAGE='mapa';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const {api,H,setConn,toast}=AudensShell;
+let map=null, layer=null, stores=[], storeMap={}, orders=[], drivers=[], showMoto=true, firstFit=true;
+const money=(v)=>'R$ '+(Number(v)||0).toFixed(2).replace('.',',');
+function minsSince(iso){ if(!iso)return 0; return Math.max(0,Math.floor((Date.now()-new Date(iso).getTime())/60000)); }
+function relMin(iso){ const m=minsSince(iso); if(m<1)return 'agora'; if(m<60)return m+' min'; return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'); }
+function hav(a,b){ if(!a||!b||a.lat==null||b.lat==null)return null; const R=6371,r=d=>d*Math.PI/180; const dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng); const h=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function coord(o){ return o&&o.address&&o.address.lat!=null&&o.address.lng!=null?{lat:o.address.lat,lng:o.address.lng}:null; }
+function storeCoord(o){ const s=storeMap[o&&o.storeId]; return s&&s.lat!=null&&s.lng!=null?{lat:s.lat,lng:s.lng}:null; }
+function riskOf(o){ let sc=minsSince(o.readyAt||o.groupingStartedAt||o.createdAt); const c=coord(o),s=storeCoord(o); if(c&&s){const d=hav(s,c); if(d!=null)sc+=d*4;} return sc>=20?'alto':sc>=10?'medio':'baixo'; }
+const RISKCOL={alto:'#f2545b',medio:'#f5b544',baixo:'#4b5468'};
+
+function initMap(){
+  if(map)return;
+  map=L.map('map',{zoomControl:true,attributionControl:true}).setView([-19.77,-43.85],13); // Santa Luzia default
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  layer=L.layerGroup().addTo(map);
+  setTimeout(()=>map.invalidateSize(),200);
+}
+function orderIcon(o){
+  const col=RISKCOL[riskOf(o)];
+  const num=String(o.displayId||o.externalOrderId||'').slice(-3);
+  return L.divIcon({className:'',html:`<div class="mpin" style="background:${col}">${num}<span class="tip" style="border-top-color:${col}"></span></div>`,iconSize:[40,30],iconAnchor:[20,36],popupAnchor:[0,-34]});
+}
+function storeIcon(){ return L.divIcon({className:'',html:`<div class="mstore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>`,iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-16]}); }
+function motoIcon(d){ const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const ini=(d.name||'?').trim().charAt(0).toUpperCase(); const img=d.photoUrl?`<img src="${d.photoUrl}" style="width:100%;height:100%;object-fit:cover">`:ini; return L.divIcon({className:'',html:`<div class="mmoto ${loja?'loja':''}">${img}</div>`,iconSize:[32,32],iconAnchor:[16,16],popupAnchor:[0,-14]}); }
+
+function plot(){
+  if(!layer)return;
+  layer.clearLayers();
+  const pts=[];
+  // lojas
+  stores.forEach(s=>{ if(s.lat!=null&&s.lng!=null){ const m=L.marker([s.lat,s.lng],{icon:storeIcon(),zIndexOffset:400}).addTo(layer); m.bindPopup(`<div class="pp"><div class="t">${s.name}</div><div class="s">Loja</div></div>`); pts.push([s.lat,s.lng]); } });
+  // pedidos prontos sem rota
+  const ready=orders.filter(o=>o.status==='waiting_grouping'&&!o.assignedRouteId);
+  let noloc=0;
+  ready.forEach(o=>{ const c=coord(o); if(!c){noloc++;return;} const risk=riskOf(o); const m=L.marker([c.lat,c.lng],{icon:orderIcon(o),zIndexOffset:200}).addTo(layer);
+    const bairro=(o.address&&o.address.neighborhood)||''; const rc=RISKCOL[risk];
+    m.bindPopup(`<div class="pp"><div class="t">Nº ${o.displayId||o.externalOrderId||''} · ${o.storeName||''}</div><div class="s">${bairro} · ${money(o.total)}</div><div class="s">pronto há ${relMin(o.readyAt||o.groupingStartedAt||o.createdAt)}</div><div class="r" style="color:${rc}">risco ${risk}</div></div>`);
+    pts.push([c.lat,c.lng]); });
+  // motoboys online com localização
+  let motoN=0;
+  if(showMoto) drivers.forEach(d=>{ if(!d.online)return; const c=d.currentLocation; if(!c||c.lat==null)return; motoN++; const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const m=L.marker([c.lat,c.lng],{icon:motoIcon(d),zIndexOffset:300}).addTo(layer);
+    m.bindPopup(`<div class="pp"><div class="t">🛵 ${d.name||''}</div><div class="s">${loja?'na loja':(d.activeRouteId?'em rota':'online')}</div></div>`); pts.push([c.lat,c.lng]); });
+  document.getElementById('sPed').textContent=ready.length;
+  document.getElementById('sMoto').textContent=drivers.filter(d=>d.online&&d.currentLocation&&d.currentLocation.lat!=null).length;
+  const nl=document.getElementById('noloc'); if(noloc){ nl.style.display='block'; nl.textContent='⚠ '+noloc+' pedido(s) sem localização no mapa (endereço não geocodificado).'; } else nl.style.display='none';
+  if(firstFit && pts.length){ try{ map.fitBounds(pts,{padding:[50,50],maxZoom:15}); }catch(e){} firstFit=false; }
+}
+function toggleMoto(){ showMoto=!showMoto; document.getElementById('motoSw').classList.toggle('on',showMoto); plot(); }
+
+async function load(){
+  if(!api.hasBackend){ setConn('err'); return; }
+  initMap();
+  try{
+    const [so,or_,dr]=await Promise.all([api.stores().catch(()=>[]),api.orders().catch(()=>[]),api.drivers().catch(()=>[])]);
+    stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
+    orders=Array.isArray(or_)?or_:[]; drivers=Array.isArray(dr)?dr:[];
+    setConn('live');
+  }catch(e){ setConn('err'); }
+  plot();
+}
+// espera o Leaflet carregar (script async depois do app.js)
+(function boot(){ if(window.L){ load(); setInterval(load,10000); } else setTimeout(boot,120); })();
+</script>
+</body>
+</html>
