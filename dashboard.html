@@ -71,7 +71,8 @@ function cardHTML(o){
   const act=nx?`<button class="act" style="background:${nx[2]}" onclick="advance('${o.id}','${nx[0]}')">${nx[1]}</button>`:'';
   const deliv=o.status!=='delivered'?`<button class="act" style="background:none;border:1px solid var(--line);color:var(--dim);margin-top:6px" onclick="askDeliver('${o.id}')">🛵 entregue por motoboy</button>`:'';
   const inRoute=['sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer'].includes(o.status);
-  const swap=(inRoute&&o.assignedRouteId)?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--dim)">🛵 <b style="color:var(--text)">${driverName(o.assignedDriverId)}</b><button onclick="askSwap('${o.id}')" style="margin-left:auto;background:none;border:1px solid var(--line);color:var(--violet3);border-radius:7px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer">trocar</button></div>`:'';
+  const showSwap=(inRoute&&o.assignedRouteId)||o.status==='delivered';
+  const swap=showSwap?`<div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--dim)">🛵 <b style="color:var(--text)">${driverName(o.assignedDriverId)}</b><button onclick="askSwap('${o.id}')" style="margin-left:auto;background:none;border:1px solid var(--line);color:var(--violet3);border-radius:7px;padding:3px 9px;font-size:10.5px;font-weight:700;cursor:pointer">trocar</button></div>`:'';
   let fin='';
   if(o.status==='delivered'){
     if(!o.finalized && canFinalize) fin=`<button class="act" style="background:#34d399;color:#04241a;margin-top:6px" onclick="finalizeOrder('${o.id}')">✓ Finalizar (conferir)</button>`;
@@ -116,21 +117,27 @@ function renderSwap(){
   if(!ov){ ov=document.createElement('div'); ov.id='swapPick'; document.body.appendChild(ov); }
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9999';
   const list=drivers.length?drivers.map(d=>`<button onclick="doSwap('${d.id}')" ${d.id===curId?'disabled':''} style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card2);border:1px solid ${d.id===curId?'var(--violet)':'var(--line)'};color:var(--text);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:${d.id===curId?'default':'pointer'};font-size:13.5px;opacity:${d.id===curId?'.6':'1'}"><span style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#4b3b8f,#7c3aed);display:grid;place-items:center;font-weight:800">${(d.name||'?').trim().charAt(0).toUpperCase()}</span>${d.name||d.id}${d.id===curId?' <span style="color:var(--faint);font-size:11px">(atual)</span>':(d.online?'':' <span style="color:var(--faint);font-size:11px">(offline)</span>')}</button>`).join(''):'<div style="color:var(--faint);padding:10px">Nenhum motoboy cadastrado.</div>';
-  ov.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(360px,92vw)" onclick="event.stopPropagation()"><div style="font-size:15px;font-weight:800;margin-bottom:3px">Trocar motoboy · ${num}</div><div style="font-size:12px;color:var(--faint);margin-bottom:14px">A rota inteira desse pedido passa para o motoboy escolhido. O anterior é liberado.</div>${list}<button onclick="closeSwap()" style="width:100%;background:none;border:none;color:var(--faint);padding:8px;margin-top:4px;cursor:pointer;font-size:12.5px">cancelar</button></div>`;
+  const isDeliv=o&&o.status==='delivered';
+  const sub=isDeliv?'Corrige quem recebe a taxa desta entrega (não muda o status).':'A rota inteira desse pedido passa para o motoboy escolhido. O anterior é liberado.';
+  ov.innerHTML=`<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(360px,92vw)" onclick="event.stopPropagation()"><div style="font-size:15px;font-weight:800;margin-bottom:3px">Trocar motoboy · ${num}</div><div style="font-size:12px;color:var(--faint);margin-bottom:14px">${sub}</div>${list}<button onclick="closeSwap()" style="width:100%;background:none;border:none;color:var(--faint);padding:8px;margin-top:4px;cursor:pointer;font-size:12.5px">cancelar</button></div>`;
   ov.onclick=closeSwap;
 }
 async function doSwap(driverId){
-  const o=orders.find(x=>x.id===swapForOrder); if(!o)return; const rid=o.assignedRouteId;
-  if(!rid){ toast('Este pedido não está numa rota'); return; }
-  try{ await api.assignRoute(rid,driverId); swapForOrder=null; renderSwap(); toast('Motoboy trocado para '+driverName(driverId)); load(); }
-  catch(e){ toast('Erro: '+e.message); }
+  const o=orders.find(x=>x.id===swapForOrder); if(!o)return;
+  try{
+    if(o.status==='delivered'){ await api.reassignDriver(o.id,driverId); }
+    else { const rid=o.assignedRouteId; if(!rid){ toast('Este pedido não está numa rota'); return; } await api.assignRoute(rid,driverId); }
+    swapForOrder=null; renderSwap(); toast('Motoboy alterado para '+driverName(driverId)); load();
+  }catch(e){ toast('Erro: '+e.message); }
 }
 function refTime(o){ return new Date(o.readyAt||o.preparingAt||o.createdAt||0).getTime(); }
 function isTodayD(iso){ if(!iso)return false; const d=new Date(iso),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
+function matchSearch(o){ const q=AudensShell.searchTerm(); if(!q)return true; const hay=[(o.displayId||''),(o.externalOrderId||''),(o.customer&&o.customer.name)||'',o.storeName||'',(o.address&&o.address.neighborhood)||'',driverName(o.assignedDriverId)].join(' ').toLowerCase(); return hay.includes(q); }
+document.addEventListener('audens:search',()=>renderBoard());
 function renderBoard(){
   document.getElementById('board').innerHTML=COLS.map(col=>{
-    let items=orders.filter(o=>col.st.includes(o.status)&&(!col.pred||col.pred(o)));
-    if(col.st.includes('delivered')) items=items.filter(o=>isTodayD(o.finalizedAt||o.deliveredAt||o.updatedAt||o.createdAt)); // só de hoje
+    let items=orders.filter(o=>col.st.includes(o.status)&&(!col.pred||col.pred(o))&&matchSearch(o));
+    if(col.st.includes('delivered')&&!AudensShell.searchTerm()) items=items.filter(o=>isTodayD(o.finalizedAt||o.deliveredAt||o.updatedAt||o.createdAt)); // só de hoje (a busca vê todos)
     items=items.sort((a,b)=>refTime(a)-refTime(b));
     const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
     return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body">${cards}</div></div>`;
