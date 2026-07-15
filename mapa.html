@@ -21,7 +21,7 @@
   .mpin{position:relative;min-width:30px;padding:4px 8px;border-radius:8px;color:#fff;font-size:12px;font-weight:800;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.5);white-space:nowrap;border:1.5px solid rgba(255,255,255,.65);}
   .mpin .tip{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;}
   .mstore{width:36px;height:36px;border-radius:10px;background:#34d399;color:#04241a;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);} .mstore svg{width:20px;height:20px;}
-  .mmoto{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);overflow:hidden;} .mmoto.loja{border-color:#34d399;}
+  .mmoto{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4b3b8f,#7c3aed);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;border:2.5px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.5);overflow:hidden;} .mmoto.loja{border-color:#34d399;} .mmoto.est{border-style:dashed;border-color:#f5b544;opacity:.9;}
   .leaflet-div-icon{background:transparent;border:0;}
   .leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border:1px solid var(--line2);border-radius:12px;} .leaflet-popup-tip{background:var(--card);} .leaflet-popup-content{margin:11px 13px;font-size:12.5px;}
   .pp .t{font-size:13.5px;font-weight:800;} .pp .s{color:var(--dim);font-size:11.5px;margin-top:2px;} .pp .r{margin-top:5px;font-size:11px;font-weight:800;}
@@ -100,7 +100,14 @@ function routeOrderCoords(r){
   return {seq,start};
 }
 function storeIcon(){ return L.divIcon({className:'',html:`<div class="mstore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 9 6 4h12l1.5 5"/><path d="M4.5 9h15v1.5a3.2 3.2 0 0 1-6.4 0 3.2 3.2 0 0 1-6.4 0V9Z"/><path d="M6 13v7h12v-7"/></svg></div>`,iconSize:[36,36],iconAnchor:[18,18],popupAnchor:[0,-16]}); }
-function motoIcon(d){ const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const ini=(d.name||'?').trim().charAt(0).toUpperCase(); const img=d.photoUrl?`<img src="${d.photoUrl}" style="width:100%;height:100%;object-fit:cover">`:ini; return L.divIcon({className:'',html:`<div class="mmoto ${loja?'loja':''}">${img}</div>`,iconSize:[32,32],iconAnchor:[16,16],popupAnchor:[0,-14]}); }
+function motoIcon(d,gps){ const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const ini=(d.name||'?').trim().charAt(0).toUpperCase(); const img=d.photoUrl?`<img src="${d.photoUrl}" style="width:100%;height:100%;object-fit:cover">`:ini; return L.divIcon({className:'',html:`<div class="mmoto ${loja?'loja':''} ${gps?'':'est'}">${img}</div>`,iconSize:[32,32],iconAnchor:[16,16],popupAnchor:[0,-14]}); }
+// posição do motoboy: GPS ao vivo, senão estimada pela rota ativa (próxima parada), senão na loja
+function driverPos(d){
+  const c=d.currentLocation; if(c&&c.lat!=null)return {lat:c.lat,lng:c.lng,gps:true};
+  if(d.activeRouteId){ const r=routes.find(x=>x.id===d.activeRouteId); if(r){ const ords=(r.orders||[]).map(id=>orders.find(o=>o.id===id)).filter(Boolean); const next=ords.find(o=>o.status!=='delivered')||ords[0]; const nc=next&&coord(next); if(nc)return {lat:nc.lat,lng:nc.lng,gps:false}; } }
+  const st=stores.find(x=>x.lat!=null&&x.lng!=null); if(st)return {lat:st.lat,lng:st.lng,gps:false};
+  return null;
+}
 
 function plot(){
   if(!layer)return;
@@ -125,17 +132,19 @@ function plot(){
     const bairro=(o.address&&o.address.neighborhood)||''; const rc=STCOL[cat];
     m.bindPopup(`<div class="pp"><div class="t">Nº ${o.displayId||o.externalOrderId||''} · ${o.storeName||''}</div><div class="s">${bairro} · ${money(o.total)}</div><div class="s">${relMin(o.readyAt||o.preparingAt||o.createdAt)} atrás</div><div class="r" style="color:${rc}">${STLBL[cat]}${o.assignedDriverId?(' · '+(drivers.find(d=>d.id===o.assignedDriverId)||{}).name):''}</div></div>`);
     pts.push([c.lat,c.lng]); });
-  // motoboys online com localização
-  let motoN=0;
-  if(showMoto) drivers.forEach(d=>{ if(!d.online)return; const c=d.currentLocation; if(!c||c.lat==null)return; motoN++; const loja=!!(d.isInsideStoreGeofence||d.manualAtStore); const m=L.marker([c.lat,c.lng],{icon:motoIcon(d),zIndexOffset:300}).addTo(layer);
-    m.bindPopup(`<div class="pp"><div class="t">🛵 ${d.name||''}</div><div class="s">${loja?'na loja':(d.activeRouteId?'em rota':'online')}</div></div>`); pts.push([c.lat,c.lng]); });
-  const motoLoc=drivers.filter(d=>d.online&&d.currentLocation&&d.currentLocation.lat!=null).length;
-  const motoOnline=drivers.filter(d=>d.online).length;
+  // motoboys: online OU com rota ativa; GPS ao vivo ou posição estimada
+  let motoShown=0, motoNoGps=0;
+  if(showMoto) drivers.forEach(d=>{ if(!(d.online||d.activeRouteId))return; const pos=driverPos(d); if(!pos)return; motoShown++; if(!pos.gps)motoNoGps++;
+    const loja=!!(d.isInsideStoreGeofence||d.manualAtStore);
+    const m=L.marker([pos.lat,pos.lng],{icon:motoIcon(d,pos.gps),zIndexOffset:300}).addTo(layer);
+    const est=pos.gps?'':' · <span style="color:#f5b544">posição estimada (sem GPS ao vivo)</span>';
+    m.bindPopup(`<div class="pp"><div class="t">🛵 ${d.name||''}</div><div class="s">${loja?'na loja':(d.activeRouteId?'em rota':'online')}${est}</div></div>`); pts.push([pos.lat,pos.lng]); });
   document.getElementById('sPed').textContent=show.length;
-  document.getElementById('sMoto').textContent=motoLoc;
+  document.getElementById('sMoto').textContent=motoShown;
   const notes=[];
   if(noloc)notes.push('⚠ '+noloc+' pedido(s) sem localização (endereço não geocodificado).');
-  if(showMoto&&motoLoc===0)notes.push(motoOnline?('⚠ '+motoOnline+' motoboy(s) online, mas sem GPS ativo — peça para abrirem o app com a localização ligada.'):'Nenhum motoboy online no momento.');
+  if(showMoto&&motoShown===0)notes.push('Nenhum motoboy online ou em rota no momento.');
+  else if(showMoto&&motoNoGps>0)notes.push('🟡 '+motoNoGps+' motoboy(s) sem GPS ao vivo — mostrados na posição estimada da rota (peça para abrirem o app com a localização ligada).');
   const nl=document.getElementById('noloc'); if(notes.length){ nl.style.display='block'; nl.innerHTML=notes.join('<br>'); } else nl.style.display='none';
   if(firstFit && pts.length){ try{ map.fitBounds(pts,{padding:[50,50],maxZoom:15}); }catch(e){} firstFit=false; }
 }
