@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Histórico do estoque</title>
+<style>
+  .htab{display:flex;gap:8px;margin-bottom:14px;} .htab button{border:1px solid var(--line);background:var(--card);color:var(--dim);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;} .htab button.on{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;}
+  table.ht{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  table.ht th{font-size:10.5px;color:var(--faint);font-weight:700;text-align:left;padding:11px 12px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);background:var(--card2);}
+  table.ht td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12.5px;} table.ht tr:last-child td{border-bottom:none;}
+  .lnk{color:var(--violet3);font-weight:700;cursor:pointer;text-decoration:none;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Histórico</h1><p>Contagens e listas de compras anteriores.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="load()">↻ Atualizar</button></div>
+  <div class="stab" id="stab"></div>
+  <div class="spick" id="spick"></div>
+  <div class="htab"><button id="t_cont" class="on" onclick="setTab('cont')">Contagens</button><button id="t_list" onclick="setTab('list')">Listas de compras</button></div>
+  <div id="body"><div class="empty" style="color:var(--faint);text-align:center;padding:30px">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='estoque';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+const TABS=[['estoque-contagem.html','Contagem'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
+let stores=[],store='',tab='cont',counts=[],lists=[];
+function renderTabs(){ document.getElementById('stab').innerHTML=TABS.map(t=>`<a href="${t[0]}" class="${t[0]==='estoque-historico.html'?'on':''}">${t[1]}</a>`).join(''); }
+function storeLogo(s){ const n=(s.name||'').toLowerCase(); return s.logoUrl?`<img src="${s.logoUrl}">`:(n.includes('burg')?AudensShell.LOGO.burger:(n.includes('pizz')?AudensShell.LOGO.pizza:AudensShell.LOGO.store)); }
+function renderPick(){ document.getElementById('spick').innerHTML=stores.map(s=>`<div class="schip ${s.id===store?'on':''}" onclick="pickStore('${s.id}')"><span class="im">${storeLogo(s)}</span>${s.name}</div>`).join(''); }
+function pickStore(id){ store=id; try{sessionStorage.setItem('audens_stock_store',id);}catch(e){} renderPick(); load(); }
+function setTab(t){ tab=t; document.getElementById('t_cont').classList.toggle('on',t==='cont'); document.getElementById('t_list').classList.toggle('on',t==='list'); render(); }
+function dt(iso){ if(!iso)return '—'; const d=new Date(iso); return d.toLocaleDateString('pt-BR')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function badge(st){ return st==='finalized'?'<span class="sbadge fi">Finalizada</span>':(st==='exported'?'<span class="sbadge ex">Exportada</span>':'<span class="sbadge dr">Rascunho</span>'); }
+
+function render(){
+  const box=document.getElementById('body');
+  if(tab==='cont'){
+    if(!counts.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhuma contagem ainda.</div>'; return; }
+    box.innerHTML=`<table class="ht"><thead><tr><th>Data</th><th>Responsável</th><th>Produtos contados</th><th>Status</th><th></th></tr></thead><tbody>`+
+      counts.map(c=>`<tr><td>${dt(c.finishedAt||c.startedAt)}</td><td>${c.startedBy||c.finishedBy||'—'}</td><td>${Object.keys(c.counts||{}).length}</td><td>${badge(c.status)}</td>
+        <td style="text-align:right">${c.listId?`<a class="lnk" href="estoque-lista.html?id=${c.listId}">ver lista →</a>`:'—'}</td></tr>`).join('')+`</tbody></table>`;
+  } else {
+    if(!lists.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhuma lista ainda.</div>'; return; }
+    box.innerHTML=`<table class="ht"><thead><tr><th>Data</th><th>Itens</th><th>Status</th><th></th></tr></thead><tbody>`+
+      lists.map(l=>`<tr><td>${dt(l.createdAt)} · ${l.dayKey||''}</td><td>${l.itemCount!=null?l.itemCount:(l.items?l.items.length:'—')}</td><td>${badge(l.status)}</td>
+        <td style="text-align:right"><a class="lnk" href="estoque-lista.html?id=${l.id}">abrir →</a></td></tr>`).join('')+`</tbody></table>`;
+  }
+}
+async function load(){
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{ const [cs,ls]=await Promise.all([api.stockCountsHistory(store).catch(()=>[]),api.stockListsHistory(store).catch(()=>[])]); counts=Array.isArray(cs)?cs:[]; lists=Array.isArray(ls)?ls:[]; setConn('live'); }
+  catch(e){ setConn('err'); }
+  render();
+}
+async function boot(){
+  renderTabs();
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{ stores=await api.stores(); }catch(e){ stores=[]; }
+  try{ const saved=sessionStorage.getItem('audens_stock_store'); if(saved&&stores.find(s=>s.id===saved))store=saved; }catch(e){}
+  if(!store&&stores.length)store=stores[0].id;
+  renderPick(); load();
+}
+boot();
+</script>
+</body>
+</html>

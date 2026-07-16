@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Produtos</title>
+<style>
+  .pfilter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .pfilter input,.pfilter select{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;}
+  .ptable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .ptable th{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card2);}
+  .ptable td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12.5px;} .ptable tr:last-child td{border-bottom:none;}
+  .ptable .catrow td{background:var(--card2);font-weight:800;font-size:11px;text-transform:uppercase;color:var(--violet3);letter-spacing:.03em;}
+  .pb2{border:1px solid var(--line);background:var(--card2);color:var(--dim);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;} .pb2:hover{border-color:var(--violet);color:var(--text);}
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.62);display:grid;place-items:center;z-index:9999;padding:16px;}
+  .ovc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(460px,95vw);max-height:90vh;overflow:auto;}
+  .fld{margin-bottom:11px;} .fld label{display:block;font-size:11.5px;color:var(--dim);margin-bottom:5px;font-weight:600;}
+  .fld input,.fld select,.fld textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:13.5px;font-family:inherit;box-sizing:border-box;}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .chkline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Produtos</h1><p>Cadastro por loja. Defina a quantidade necessária para dia de semana e fim de semana.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="openForm()">+ Novo produto</button></div>
+  <div class="stab" id="stab"></div>
+  <div class="spick" id="spick"></div>
+  <div class="pfilter"><input id="q" placeholder="Buscar produto…" oninput="render()" /><select id="fcat" onchange="render()"><option value="">Todas as categorias</option></select><span id="pcount" style="font-size:12px;color:var(--faint);margin-left:auto"></span></div>
+  <div id="body"><div class="empty" style="color:var(--faint);text-align:center;padding:30px">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='estoque';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+const TABS=[['estoque-contagem.html','Contagem'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
+const UNITS=['un','kg','g','l','cx','pct','fardo','galao','bandeja','saco','maco'];
+let stores=[],store='',products=[],cats=[],suppliers=[],editing=null;
+function num(v){ return v===''||v==null?'':(Math.round(Number(v)*100)/100); }
+function renderTabs(){ document.getElementById('stab').innerHTML=TABS.map(t=>`<a href="${t[0]}" class="${t[0]==='estoque-produtos.html'?'on':''}">${t[1]}</a>`).join(''); }
+function storeLogo(s){ const n=(s.name||'').toLowerCase(); return s.logoUrl?`<img src="${s.logoUrl}">`:(n.includes('burg')?AudensShell.LOGO.burger:(n.includes('pizz')?AudensShell.LOGO.pizza:AudensShell.LOGO.store)); }
+function renderPick(){ document.getElementById('spick').innerHTML=stores.map(s=>`<div class="schip ${s.id===store?'on':''}" onclick="pickStore('${s.id}')"><span class="im">${storeLogo(s)}</span>${s.name}</div>`).join(''); }
+function pickStore(id){ store=id; try{sessionStorage.setItem('audens_stock_store',id);}catch(e){} renderPick(); loadStore(); }
+function supName(id){ const s=suppliers.find(x=>x.id===id); return s?s.name:'—'; }
+function catOrder(){ const map={}; cats.forEach(c=>map[c.name]=c.displayOrder); const names=[...new Set(products.map(p=>p.category||'Geral'))]; names.sort((a,b)=>((map[a]??999)-(map[b]??999))||a.localeCompare(b)); return names; }
+
+function render(){
+  const q=(document.getElementById('q').value||'').trim().toLowerCase();
+  const fc=document.getElementById('fcat').value;
+  let list=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!fc||(p.category||'Geral')===fc));
+  document.getElementById('pcount').textContent=list.length+' produto(s)';
+  const box=document.getElementById('body');
+  if(!list.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhum produto. Clique em "Novo produto".</div>'; return; }
+  let html='<table class="ptable"><thead><tr><th>Produto</th><th>Un</th><th>Semana</th><th>Fim sem.</th><th>Fornecedor</th><th></th></tr></thead><tbody>';
+  for(const cat of catOrder()){
+    const items=list.filter(p=>(p.category||'Geral')===cat); if(!items.length)continue;
+    html+=`<tr class="catrow"><td colspan="6">${cat} · ${items.length}</td></tr>`;
+    for(const p of items){
+      html+=`<tr><td><b>${p.name}</b>${p.active===false?' <span class="sbadge dr" style="font-size:9px">inativo</span>':''}${p.storageLocation?`<div style="font-size:10.5px;color:var(--faint)">${p.storageLocation}</div>`:''}</td>
+        <td>${p.unit}</td><td>${num(p.weekdayTarget)||'—'}</td><td>${num(p.weekendTarget)||'—'}</td><td style="color:var(--dim)">${supName(p.supplierId)}</td>
+        <td style="text-align:right;white-space:nowrap"><button class="pb2" onclick="openForm('${p.id}')">editar</button> <button class="pb2" onclick="delProd('${p.id}')">✕</button></td></tr>`;
+    }
+  }
+  html+='</tbody></table>';
+  box.innerHTML=html;
+}
+function fillCatFilter(){ const sel=document.getElementById('fcat'); const cur=sel.value; const names=catOrder(); sel.innerHTML='<option value="">Todas as categorias</option>'+names.map(n=>`<option ${n===cur?'selected':''}>${n}</option>`).join(''); }
+
+function openForm(id){
+  editing=id?products.find(p=>p.id===id):{storeId:store,unit:'un',category:'',weekdayTarget:0,weekendTarget:0,packageQuantity:0,purchaseMultiple:false,supplierId:null,storageLocation:'',notes:'',active:true};
+  if(!editing)return;
+  const catNames=catOrder();
+  let ov=document.getElementById('pform'); if(!ov){ov=document.createElement('div');ov.id='pform';ov.className='ov';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="ovc" onclick="event.stopPropagation()">
+    <div style="font-size:16px;font-weight:800;margin-bottom:14px">${id?'Editar produto':'Novo produto'}</div>
+    <div class="fld"><label>Nome</label><input id="f_name" value="${(editing.name||'').replace(/"/g,'&quot;')}"></div>
+    <div class="frow"><div class="fld"><label>Categoria</label><input id="f_cat" list="catlist" value="${(editing.category||'').replace(/"/g,'&quot;')}"><datalist id="catlist">${catNames.map(n=>`<option value="${n}">`).join('')}</datalist></div>
+      <div class="fld"><label>Unidade</label><select id="f_unit">${UNITS.map(u=>`<option ${u===editing.unit?'selected':''}>${u}</option>`).join('')}</select></div></div>
+    <div class="frow"><div class="fld"><label>Necessário — dia de semana</label><input id="f_wd" inputmode="decimal" value="${num(editing.weekdayTarget)||0}"></div>
+      <div class="fld"><label>Necessário — fim de semana</label><input id="f_we" inputmode="decimal" value="${num(editing.weekendTarget)||0}"></div></div>
+    <div class="fld"><label>Fornecedor</label><select id="f_sup"><option value="">— sem fornecedor —</option>${suppliers.map(s=>`<option value="${s.id}" ${s.id===editing.supplierId?'selected':''}>${s.name}</option>`).join('')}</select></div>
+    <div class="frow"><div class="fld"><label>Qtd. por embalagem</label><input id="f_pkg" inputmode="decimal" value="${num(editing.packageQuantity)||0}"></div>
+      <div class="fld"><label>Onde fica (opcional)</label><input id="f_loc" value="${(editing.storageLocation||'').replace(/"/g,'&quot;')}"></div></div>
+    <div class="fld"><label class="chkline"><input type="checkbox" id="f_mult" ${editing.purchaseMultiple?'checked':''}> comprar só em múltiplos da embalagem</label></div>
+    <div class="fld"><label>Observação</label><input id="f_notes" value="${(editing.notes||'').replace(/"/g,'&quot;')}"></div>
+    <div class="fld"><label class="chkline"><input type="checkbox" id="f_active" ${editing.active!==false?'checked':''}> produto ativo</label></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="sbtn ghost" style="flex:1;padding:11px" onclick="closeForm()">Cancelar</button><button class="sbtn g" style="flex:1;padding:11px" onclick="saveForm('${id||''}')">Salvar</button></div>
+  </div>`;
+  ov.onclick=closeForm;
+}
+function closeForm(){ const ov=document.getElementById('pform'); if(ov)ov.remove(); editing=null; }
+async function saveForm(id){
+  const g=(x)=>document.getElementById(x);
+  const body={ storeId:store, name:g('f_name').value.trim(), category:g('f_cat').value.trim()||'Geral', unit:g('f_unit').value,
+    weekdayTarget:Number(g('f_wd').value)||0, weekendTarget:Number(g('f_we').value)||0, supplierId:g('f_sup').value||null,
+    packageQuantity:Number(g('f_pkg').value)||0, purchaseMultiple:g('f_mult').checked, storageLocation:g('f_loc').value.trim(),
+    notes:g('f_notes').value.trim(), active:g('f_active').checked };
+  if(!body.name){ toast('Informe o nome'); return; }
+  try{ if(id)await api.stockPatchProduct(id,body); else await api.stockCreateProduct(body); closeForm(); toast('Produto salvo'); await loadStore(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+async function delProd(id){ const p=products.find(x=>x.id===id); if(!confirm('Excluir "'+(p?p.name:'')+'"?'))return; try{ await api.stockDelProduct(id); toast('Excluído'); await loadStore(); }catch(e){ toast('Erro: '+e.message); } }
+
+async function loadStore(){
+  try{
+    const [ps,cs,su]=await Promise.all([api.stockProducts(store).catch(()=>[]),api.stockCategories(store).catch(()=>[]),api.stockSuppliers(store).catch(()=>[])]);
+    products=Array.isArray(ps)?ps:[]; cats=Array.isArray(cs)?cs:[]; suppliers=Array.isArray(su)?su:[]; setConn('live');
+  }catch(e){ setConn('err'); }
+  fillCatFilter(); render();
+}
+async function boot(){
+  renderTabs();
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{ stores=await api.stores(); }catch(e){ stores=[]; }
+  try{ const saved=sessionStorage.getItem('audens_stock_store'); if(saved&&stores.find(s=>s.id===saved))store=saved; }catch(e){}
+  if(!store&&stores.length)store=stores[0].id;
+  renderPick(); loadStore();
+}
+boot();
+</script>
+</body>
+</html>

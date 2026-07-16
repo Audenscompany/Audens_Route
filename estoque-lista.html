@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Lista de compras</title>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Lista de compras</h1><p>Gerada a partir da contagem. Edite as quantidades e exporte por fornecedor.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="reload()">↻ Atualizar</button></div>
+  <div class="stab" id="stab"></div>
+  <div class="spick" id="spick"></div>
+  <div id="head"></div>
+  <div id="body"><div class="empty" style="color:var(--faint);text-align:center;padding:30px">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='estoque';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+const TABS=[['estoque-contagem.html','Contagem'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
+const ROLE=(()=>{try{return sessionStorage.getItem('audens_role')||'';}catch(e){return '';}})();
+let stores=[],store='',suppliers=[],list=null,saveT=null,showZero=false;
+const qp=new URLSearchParams(location.search); let listId=qp.get('id')||'';
+function num(v){ return v===''||v==null?0:(Math.round(Number(v)*100)/100); }
+function fmt(v){ const n=num(v); return (Number.isInteger(n)?n:n.toFixed(2).replace('.',',')); }
+
+function renderTabs(){ document.getElementById('stab').innerHTML=TABS.map(t=>`<a href="${t[0]}" class="${t[0]==='estoque-lista.html'?'on':''}">${t[1]}</a>`).join(''); }
+function storeLogo(s){ const n=(s.name||'').toLowerCase(); return s.logoUrl?`<img src="${s.logoUrl}">`:(n.includes('burg')?AudensShell.LOGO.burger:(n.includes('pizz')?AudensShell.LOGO.pizza:AudensShell.LOGO.store)); }
+function renderPick(){ document.getElementById('spick').innerHTML=stores.map(s=>`<div class="schip ${s.id===store?'on':''}" onclick="pickStore('${s.id}')"><span class="im">${storeLogo(s)}</span>${s.name}</div>`).join(''); }
+function pickStore(id){ store=id; listId=''; try{sessionStorage.setItem('audens_stock_store',id);}catch(e){} renderPick(); loadList(); }
+function supName(id){ const s=suppliers.find(x=>x.id===id); return s?s.name:'Sem fornecedor definido'; }
+function supObj(id){ return suppliers.find(x=>x.id===id)||null; }
+
+function renderHead(){
+  const h=document.getElementById('head');
+  if(!list){ h.innerHTML=''; return; }
+  const st=list.status; const badge=st==='finalized'?'<span class="sbadge fi">Finalizada</span>':(st==='exported'?'<span class="sbadge ex">Exportada</span>':'<span class="sbadge dr">Rascunho</span>');
+  const items=list.items||[]; const toBuy=items.filter(i=>num(i.final)>0);
+  const sups=[...new Set(toBuy.map(i=>supName(i.supplierId)))];
+  h.innerHTML=`<div class="skpis">
+    <div class="skpi"><div class="n">${badge}</div><div class="l">Status da lista</div><div class="s">${list.dayKey||''}</div></div>
+    <div class="skpi"><div class="n" style="color:var(--violet3)">${toBuy.length}</div><div class="l">Itens para comprar</div><div class="s">de ${items.length} avaliados</div></div>
+    <div class="skpi"><div class="n" style="color:var(--green)">${sups.length}</div><div class="l">Fornecedores</div><div class="s">${sups.slice(0,3).join(', ')||'—'}</div></div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+    <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);cursor:pointer"><input type="checkbox" ${showZero?'checked':''} onchange="toggleZero(this.checked)"> mostrar itens zerados</label>
+    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+      ${st!=='finalized'?`<button class="sbtn ghost" style="padding:9px 14px;font-size:12.5px" onclick="addItem()">+ Adicionar item</button>`:''}
+      <button class="sbtn ghost" style="padding:9px 14px;font-size:12.5px" onclick="printList()">🖨 Imprimir / PDF</button>
+      ${st!=='finalized'?`<button class="sbtn gr" style="padding:9px 14px;font-size:12.5px" onclick="finalizeList()">Finalizar lista</button>`:`<button class="sbtn ghost" style="padding:9px 14px;font-size:12.5px" onclick="dupList()">Duplicar p/ corrigir</button>`}
+    </div>
+  </div>`;
+}
+function renderBody(){
+  const box=document.getElementById('body');
+  if(!list){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhuma lista para esta loja ainda. Faça e finalize uma <a href="estoque-contagem.html" style="color:var(--violet3)">contagem</a>.</div>'; return; }
+  const finalized=list.status==='finalized';
+  const items=(list.items||[]).map((it,idx)=>({...it,_i:idx}));
+  const shown=items.filter(i=>showZero||num(i.final)>0);
+  if(!shown.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nada a comprar 🎉 (marque "mostrar zerados" para ver tudo).</div>'; return; }
+  const groups={}; shown.forEach(i=>{ const k=i.supplierId||'__none'; (groups[k]=groups[k]||[]).push(i); });
+  const order=Object.keys(groups).sort((a,b)=>a==='__none'?1:(b==='__none'?-1:supName(a).localeCompare(supName(b))));
+  let html='';
+  for(const k of order){
+    const g=groups[k]; const sup=k==='__none'?null:supObj(k);
+    html+=`<div class="sgrp"><div class="gh"><span class="gn">${k==='__none'?'Sem fornecedor definido':supName(k)}</span><span class="gs">${g.length} item(ns)</span>${(sup&&(sup.whatsapp||sup.phone))?`<button class="sbtn g" style="padding:6px 11px;font-size:11px;margin-left:10px" onclick="waSup('${k}')">WhatsApp</button>`:`<button class="sbtn ghost" style="padding:6px 11px;font-size:11px;margin-left:10px" onclick="copySup('${k}')">Copiar</button>`}</div>`;
+    for(const it of g){
+      html+=`<div class="litem ${it.manuallyEdited?'edited':''}">
+        <div><div class="nm">${it.name}${it.uncounted?' <span class="sbadge dr" style="font-size:9px">não contado</span>':''}</div><div class="mt">contado <b>${fmt(it.counted)}</b> · alvo <b>${fmt(it.target)}</b> · sugerido <b>${fmt(it.suggested)}</b> ${it.unit}</div></div>
+        <div class="ed"><input inputmode="decimal" ${finalized?'disabled':''} value="${fmt(it.final)}" onchange="setFinal(${it._i},this.value)"><span style="font-size:12px;color:var(--dim);min-width:24px">${it.unit}</span>${finalized?'':`<button class="rm" title="Remover" onclick="rmItem(${it._i})">✕</button>`}</div>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  box.innerHTML=html;
+}
+function toggleZero(v){ showZero=v; renderBody(); }
+function setFinal(i,val){ const it=list.items[i]; if(!it)return; it.final=Number(val)||0; it.manuallyEdited=true; scheduleSave(); renderBody(); }
+function rmItem(i){ list.items.splice(i,1); scheduleSave(); renderHead(); renderBody(); }
+function addItem(){
+  const name=prompt('Nome do item a adicionar:'); if(!name)return;
+  const qty=Number(prompt('Quantidade a comprar:','0'))||0;
+  const unit=prompt('Unidade (un, kg, cx…):','un')||'un';
+  list.items.push({productId:null,name,unit,category:'Manual',supplierId:null,counted:0,target:0,suggested:qty,final:qty,manuallyEdited:true,uncounted:false,notes:''});
+  scheduleSave(); renderHead(); renderBody();
+}
+function scheduleSave(){ clearTimeout(saveT); saveT=setTimeout(saveNow,700); }
+async function saveNow(){ if(!list)return; try{ list=await api.stockPatchList(list.id,{items:list.items}); }catch(e){ toast('Erro ao salvar: '+e.message); } }
+
+function buildText(k){
+  const g=(list.items||[]).filter(i=>(i.supplierId||'__none')===k && num(i.final)>0);
+  if(!g.length)return '';
+  const title=k==='__none'?'PEDIDO — Sem fornecedor':('PEDIDO — '+supName(k));
+  const store_=stores.find(s=>s.id===store); const lines=g.map(i=>`• ${fmt(i.final)} ${i.unit} de ${i.name}`);
+  const sup=supObj(k); const obs=sup&&sup.orderDeadline?`\nObs: entregar conforme combinado (limite ${sup.orderDeadline}).`:'';
+  return `*${title}*\n${store_?store_.name+' · ':''}${list.dayKey||''}\n\n${lines.join('\n')}${obs}`;
+}
+async function copySup(k){ const t=buildText(k); if(!t){toast('Nada a enviar');return;} try{await navigator.clipboard.writeText(t);toast('Pedido copiado');}catch(e){toast('Copie manualmente');} markExported(); }
+function waSup(k){ const t=buildText(k); if(!t){toast('Nada a enviar');return;} const sup=supObj(k); const nummber=(sup&&(sup.whatsapp||sup.phone)||'').replace(/[^0-9]/g,''); const url='https://wa.me/'+(nummber?('55'+nummber.replace(/^55/,'')):'')+'?text='+encodeURIComponent(t); window.open(url,'_blank'); markExported(); }
+async function markExported(){ if(list&&list.status==='draft'){ try{ list=await api.stockPatchList(list.id,{status:'exported'}); renderHead(); }catch(e){} } }
+
+function printList(){
+  if(!list)return;
+  const store_=stores.find(s=>s.id===store);
+  const items=(list.items||[]).filter(i=>num(i.final)>0);
+  const groups={}; items.forEach(i=>{const k=i.supplierId||'__none';(groups[k]=groups[k]||[]).push(i);});
+  let rows='';
+  Object.keys(groups).sort((a,b)=>a==='__none'?1:supName(a).localeCompare(supName(b))).forEach(k=>{
+    rows+=`<tr><td colspan="4" style="background:#eee;font-weight:bold;padding:6px 8px">${k==='__none'?'Sem fornecedor definido':supName(k)}</td></tr>`;
+    groups[k].forEach(i=>{ rows+=`<tr><td>${i.name}</td><td style="text-align:right">${fmt(i.counted)}</td><td style="text-align:right">${fmt(i.target)}</td><td style="text-align:right;font-weight:bold">${fmt(i.final)} ${i.unit}</td></tr>`; });
+  });
+  const w=window.open('','_blank');
+  w.document.write(`<html><head><title>Lista de compras — ${store_?store_.name:''}</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{font-size:18px}table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}th,td{border:1px solid #ccc;padding:5px 8px;text-align:left}th{background:#f4f4f4}</style></head><body><h1>Lista de compras — ${store_?store_.name:''}</h1><div>Data: ${list.dayKey||''}</div><table><thead><tr><th>Produto</th><th style="text-align:right">Contado</th><th style="text-align:right">Necessário</th><th style="text-align:right">Comprar</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=function(){window.print();}<\/script></body></html>`);
+  w.document.close();
+}
+async function finalizeList(){ if(!list)return; if(!confirm('Finalizar a lista? Depois de finalizada ela não poderá mais ser editada (use "duplicar" para corrigir).'))return; try{ list=await api.stockPatchList(list.id,{status:'finalized',by:ROLE}); toast('Lista finalizada'); renderHead(); renderBody(); }catch(e){ toast('Erro: '+e.message); } }
+async function dupList(){ if(!list)return; try{ const c=await api.stockDupList(list.id); toast('Lista duplicada (rascunho)'); location.href='estoque-lista.html?id='+c.id; }catch(e){ toast('Erro: '+e.message); } }
+
+async function loadList(){
+  document.getElementById('body').innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Carregando…</div>';
+  try{
+    suppliers=await api.stockSuppliers(store).catch(()=>[]);
+    if(listId){ list=await api.stockList(listId); store=list.storeId||store; }
+    else { const ls=await api.stockLists(store); list=(Array.isArray(ls)&&ls.length)?ls[0]:null; if(list)listId=list.id; }
+    setConn('live');
+  }catch(e){ list=null; setConn('err'); toast('Erro: '+e.message); }
+  renderPick(); renderHead(); renderBody();
+}
+async function reload(){ await loadList(); }
+async function boot(){
+  renderTabs();
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{ stores=await api.stores(); }catch(e){ stores=[]; }
+  try{ const saved=sessionStorage.getItem('audens_stock_store'); if(saved&&stores.find(s=>s.id===saved))store=saved; }catch(e){}
+  if(!store&&stores.length)store=stores[0].id;
+  loadList();
+}
+boot();
+</script>
+</body>
+</html>

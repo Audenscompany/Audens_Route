@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Fornecedores</title>
+<style>
+  .sup{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:11px;display:flex;align-items:flex-start;gap:12px;}
+  .sup .nm{font-size:15px;font-weight:800;} .sup .mt{font-size:12px;color:var(--dim);margin-top:3px;} .sup .mt b{color:var(--text);}
+  .sup .days{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;} .sup .days span{font-size:10px;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--faint);} .sup .days span.on{background:rgba(124,58,237,.18);border-color:var(--violet);color:#fff;}
+  .sup .acts{margin-left:auto;display:flex;gap:6px;flex-shrink:0;}
+  .pb2{border:1px solid var(--line);background:var(--card2);color:var(--dim);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;} .pb2:hover{border-color:var(--violet);color:var(--text);}
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.62);display:grid;place-items:center;z-index:9999;padding:16px;}
+  .ovc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:min(460px,95vw);max-height:90vh;overflow:auto;}
+  .fld{margin-bottom:11px;} .fld label{display:block;font-size:11.5px;color:var(--dim);margin-bottom:5px;font-weight:600;}
+  .fld input,.fld textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font-size:13.5px;font-family:inherit;box-sizing:border-box;}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .dsel{display:flex;gap:5px;flex-wrap:wrap;} .dsel button{border:1px solid var(--line);background:var(--card2);color:var(--dim);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;} .dsel button.on{background:linear-gradient(90deg,#7c3aed,#a855f7);border:none;color:#fff;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Fornecedores</h1><p>Quem recebe cada pedido, dias de pedido/entrega e WhatsApp.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="openForm()">+ Novo fornecedor</button></div>
+  <div class="stab" id="stab"></div>
+  <div class="spick" id="spick"></div>
+  <div id="body"><div class="empty" style="color:var(--faint);text-align:center;padding:30px">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='estoque';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+const TABS=[['estoque-contagem.html','Contagem'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
+const DAYS=[['seg','Seg'],['ter','Ter'],['qua','Qua'],['qui','Qui'],['sex','Sex'],['sab','Sáb'],['dom','Dom']];
+let stores=[],store='',suppliers=[],editing=null,edOrder=[],edDeliv=[];
+function renderTabs(){ document.getElementById('stab').innerHTML=TABS.map(t=>`<a href="${t[0]}" class="${t[0]==='estoque-fornecedores.html'?'on':''}">${t[1]}</a>`).join(''); }
+function storeLogo(s){ const n=(s.name||'').toLowerCase(); return s.logoUrl?`<img src="${s.logoUrl}">`:(n.includes('burg')?AudensShell.LOGO.burger:(n.includes('pizz')?AudensShell.LOGO.pizza:AudensShell.LOGO.store)); }
+function renderPick(){ document.getElementById('spick').innerHTML=stores.map(s=>`<div class="schip ${s.id===store?'on':''}" onclick="pickStore('${s.id}')"><span class="im">${storeLogo(s)}</span>${s.name}</div>`).join(''); }
+function pickStore(id){ store=id; try{sessionStorage.setItem('audens_stock_store',id);}catch(e){} renderPick(); loadStore(); }
+function dlabel(k){ const d=DAYS.find(x=>x[0]===k); return d?d[1]:k; }
+
+function render(){
+  const box=document.getElementById('body');
+  if(!suppliers.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhum fornecedor. Clique em "Novo fornecedor".</div>'; return; }
+  box.innerHTML=suppliers.map(s=>{
+    const od=(s.orderDays||[]); const contact=[s.contactName,s.phone||s.whatsapp].filter(Boolean).join(' · ');
+    return `<div class="sup"><div style="flex:1">
+      <div class="nm">${s.name}${s.active===false?' <span class="sbadge dr" style="font-size:9px">inativo</span>':''}</div>
+      ${contact?`<div class="mt">${contact}</div>`:''}
+      ${s.orderDeadline?`<div class="mt">Limite do pedido: <b>${s.orderDeadline}</b>${s.deliveryDays&&s.deliveryDays.length?(' · entrega: '+s.deliveryDays.map(dlabel).join(', ')):''}</div>`:''}
+      <div class="days">${DAYS.map(d=>`<span class="${od.includes(d[0])?'on':''}">${d[1]}</span>`).join('')}</div>
+      ${s.notes?`<div class="mt" style="color:var(--faint)">${s.notes}</div>`:''}
+    </div><div class="acts"><button class="pb2" onclick="openForm('${s.id}')">editar</button><button class="pb2" onclick="delSup('${s.id}')">✕</button></div></div>`;
+  }).join('');
+}
+function openForm(id){
+  editing=id?suppliers.find(s=>s.id===id):{storeId:store,name:'',contactName:'',phone:'',whatsapp:'',orderDays:[],orderDeadline:'',deliveryDays:[],notes:'',active:true};
+  if(!editing)return;
+  edOrder=[...(editing.orderDays||[])]; edDeliv=[...(editing.deliveryDays||[])];
+  let ov=document.getElementById('sform'); if(!ov){ov=document.createElement('div');ov.id='sform';ov.className='ov';document.body.appendChild(ov);}
+  ov.innerHTML=`<div class="ovc" onclick="event.stopPropagation()">
+    <div style="font-size:16px;font-weight:800;margin-bottom:14px">${id?'Editar fornecedor':'Novo fornecedor'}</div>
+    <div class="fld"><label>Nome do fornecedor</label><input id="f_name" value="${(editing.name||'').replace(/"/g,'&quot;')}"></div>
+    <div class="frow"><div class="fld"><label>Nome do contato</label><input id="f_contact" value="${(editing.contactName||'').replace(/"/g,'&quot;')}"></div>
+      <div class="fld"><label>Telefone</label><input id="f_phone" value="${(editing.phone||'').replace(/"/g,'&quot;')}"></div></div>
+    <div class="fld"><label>WhatsApp (só números, com DDD)</label><input id="f_wa" inputmode="numeric" value="${(editing.whatsapp||'').replace(/"/g,'&quot;')}"></div>
+    <div class="fld"><label>Dias de pedido</label><div class="dsel" id="d_order">${DAYS.map(d=>`<button type="button" class="${edOrder.includes(d[0])?'on':''}" onclick="togDay('order','${d[0]}',this)">${d[1]}</button>`).join('')}</div></div>
+    <div class="fld"><label>Horário limite do pedido</label><input id="f_deadline" placeholder="ex: 14h" value="${(editing.orderDeadline||'').replace(/"/g,'&quot;')}"></div>
+    <div class="fld"><label>Dias de entrega</label><div class="dsel" id="d_deliv">${DAYS.map(d=>`<button type="button" class="${edDeliv.includes(d[0])?'on':''}" onclick="togDay('deliv','${d[0]}',this)">${d[1]}</button>`).join('')}</div></div>
+    <div class="fld"><label>Observação</label><input id="f_notes" value="${(editing.notes||'').replace(/"/g,'&quot;')}"></div>
+    <div class="fld"><label class="chkline" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)"><input type="checkbox" id="f_active" ${editing.active!==false?'checked':''}> fornecedor ativo</label></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button class="sbtn ghost" style="flex:1;padding:11px" onclick="closeForm()">Cancelar</button><button class="sbtn g" style="flex:1;padding:11px" onclick="saveForm('${id||''}')">Salvar</button></div>
+  </div>`;
+  ov.onclick=closeForm;
+}
+function togDay(which,day,btn){ const arr=which==='order'?edOrder:edDeliv; const i=arr.indexOf(day); if(i>=0)arr.splice(i,1); else arr.push(day); btn.classList.toggle('on'); }
+function closeForm(){ const ov=document.getElementById('sform'); if(ov)ov.remove(); editing=null; }
+async function saveForm(id){
+  const g=(x)=>document.getElementById(x);
+  const body={ storeId:store, name:g('f_name').value.trim(), contactName:g('f_contact').value.trim(), phone:g('f_phone').value.trim(),
+    whatsapp:g('f_wa').value.replace(/[^0-9]/g,''), orderDays:edOrder, orderDeadline:g('f_deadline').value.trim(), deliveryDays:edDeliv,
+    notes:g('f_notes').value.trim(), active:g('f_active').checked };
+  if(!body.name){ toast('Informe o nome'); return; }
+  try{ if(id)await api.stockPatchSupplier(id,body); else await api.stockCreateSupplier(body); closeForm(); toast('Fornecedor salvo'); await loadStore(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+async function delSup(id){ const s=suppliers.find(x=>x.id===id); if(!confirm('Excluir "'+(s?s.name:'')+'"?'))return; try{ await api.stockDelSupplier(id); toast('Excluído'); await loadStore(); }catch(e){ toast('Erro: '+e.message); } }
+
+async function loadStore(){ try{ suppliers=await api.stockSuppliers(store); suppliers=Array.isArray(suppliers)?suppliers:[]; setConn('live'); }catch(e){ setConn('err'); suppliers=[]; } render(); }
+async function boot(){
+  renderTabs();
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{ stores=await api.stores(); }catch(e){ stores=[]; }
+  try{ const saved=sessionStorage.getItem('audens_stock_store'); if(saved&&stores.find(s=>s.id===saved))store=saved; }catch(e){}
+  if(!store&&stores.length)store=stores[0].id;
+  renderPick(); loadStore();
+}
+boot();
+</script>
+</body>
+</html>

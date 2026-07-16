@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Contagem</title>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Contagem diária</h1><p>Informe quanto existe de cada produto. Salva sozinho. Ao finalizar, gera a lista de compras.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="reload()">↻ Atualizar</button></div>
+  <div class="stab" id="stab"></div>
+  <div class="spick" id="spick"></div>
+  <div class="skpis" id="kpis"></div>
+  <div id="body"><div class="empty" style="color:var(--faint);text-align:center;padding:30px">Selecione uma loja…</div></div>
+</template>
+
+<script>window.PAGE='estoque';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,H,setConn,toast}=AudensShell;
+const TABS=[['estoque-contagem.html','Contagem'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
+const ROLE=(()=>{try{return sessionStorage.getItem('audens_role')||'';}catch(e){return '';}})();
+let stores=[],store='',cnt=null,products=[],cats=[],dash=null,saveT=null,dirty={};
+function num(v){ return v===''||v==null?'':(Math.round(Number(v)*100)/100); }
+
+function renderTabs(){ document.getElementById('stab').innerHTML=TABS.map(t=>`<a href="${t[0]}" class="${t[0]==='estoque-contagem.html'?'on':''}">${t[1]}</a>`).join(''); }
+function storeLogo(s){ const n=(s.name||'').toLowerCase(); const im=s.logoUrl?`<img src="${s.logoUrl}">`:(n.includes('burg')?AudensShell.LOGO.burger:(n.includes('pizz')?AudensShell.LOGO.pizza:AudensShell.LOGO.store)); return im; }
+function renderPick(){
+  document.getElementById('spick').innerHTML=stores.map(s=>`<div class="schip ${s.id===store?'on':''}" onclick="pickStore('${s.id}')"><span class="im">${storeLogo(s)}</span>${s.name}</div>`).join('')||'<span style="color:var(--faint);font-size:12px">Nenhuma loja cadastrada</span>';
+}
+function pickStore(id){ store=id; try{sessionStorage.setItem('audens_stock_store',id);}catch(e){} renderPick(); loadStore(); }
+
+function catsOrder(){ const map={}; cats.forEach(c=>map[c.name]=c.displayOrder); const names=[...new Set(products.map(p=>p.category||'Geral'))]; names.sort((a,b)=>((map[a]??999)-(map[b]??999))||a.localeCompare(b)); return names; }
+function countedQty(pid){ const c=cnt&&cnt.counts&&cnt.counts[pid]; return c&&c.qty!=null?c.qty:''; }
+function nDone(){ return products.filter(p=>{const q=countedQty(p.id);return q!==''&&q!=null;}).length; }
+
+function renderKPIs(){
+  const total=products.length, done=nDone(), pct=total?Math.round(done/total*100):0;
+  const st=cnt?cnt.status:'—';
+  document.getElementById('kpis').innerHTML=`
+    <div class="skpi"><div class="n" style="color:${st==='finalized'?'var(--green)':'var(--amber)'}">${st==='finalized'?'Finalizada':'Em contagem'}</div><div class="l">Contagem de hoje</div><div class="s">${cnt&&cnt.startedBy?('por '+cnt.startedBy):'—'}</div></div>
+    <div class="skpi"><div class="n" style="color:var(--violet3)">${done}/${total}</div><div class="l">Produtos contados</div><div class="s">${pct}% concluído</div></div>
+    <div class="skpi"><div class="n">${total-done}</div><div class="l">Faltam contar</div><div class="s">nesta loja</div></div>
+    <div class="skpi"><div class="n" style="color:var(--green)">${dash?dash.suppliersToday.length:0}</div><div class="l">Fornecedores hoje</div><div class="s">${dash&&dash.suppliersToday.length?dash.suppliersToday.map(s=>s.name).join(', '):'—'}</div></div>`;
+}
+function renderBody(){
+  const box=document.getElementById('body');
+  if(!store){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Selecione uma loja…</div>'; return; }
+  if(!products.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhum produto ativo nesta loja. Cadastre em <a href="estoque-produtos.html" style="color:var(--violet3)">Produtos</a>.</div>'; return; }
+  const finalized=cnt&&cnt.status==='finalized';
+  let html='';
+  for(const cat of catsOrder()){
+    const items=products.filter(p=>(p.category||'Geral')===cat);
+    if(!items.length)continue;
+    html+=`<div class="scat"><h3>${cat} · ${items.filter(p=>countedQty(p.id)!=='').length}/${items.length}</h3>`;
+    for(const p of items){
+      const q=countedQty(p.id); const done=q!==''&&q!=null;
+      const last=p.lastCounted!=null?`última: ${num(p.lastCounted)} ${p.unit}`:'sem contagem anterior';
+      html+=`<div class="crow ${done?'done':''}" id="row_${p.id}">
+        <div><div class="cn">${p.name}</div><div class="cl">${last}</div></div>
+        <div class="qin"><input inputmode="decimal" ${finalized?'disabled':''} value="${done?num(q):''}" placeholder="0" oninput="onQty('${p.id}',this.value)" /><span class="qu">${p.unit}</span></div>
+      </div>`;
+    }
+    html+='</div>';
+  }
+  box.innerHTML=html;
+  if(!finalized){
+    const total=products.length, done=nDone(), pct=total?Math.round(done/total*100):0;
+    box.innerHTML+=`<div class="sbar">
+      <div class="sprog"><div class="pt" id="saveHint">${done}/${total} contados · ${pct}%</div><div class="pb"><i style="width:${pct}%"></i></div></div>
+      <button class="sbtn ghost" onclick="saveNow(true)">Salvar rascunho</button>
+      <button class="sbtn gr" onclick="finalize()">✓ Finalizar contagem</button></div>`;
+  } else {
+    box.innerHTML+=`<div class="sbar"><div class="sprog"><div class="pt">Contagem finalizada</div></div><a class="sbtn g" href="estoque-lista.html${cnt.listId?('?id='+cnt.listId):''}">Ver lista de compras →</a></div>`;
+  }
+}
+function onQty(pid,val){
+  if(!cnt)return;
+  cnt.counts=cnt.counts||{};
+  if(val===''||val==null){ if(cnt.counts[pid])delete cnt.counts[pid]; }
+  else cnt.counts[pid]={qty:Number(val)||0};
+  dirty[pid]=cnt.counts[pid]||{qty:null};
+  const row=document.getElementById('row_'+pid); if(row)row.classList.toggle('done',val!==''&&val!=null);
+  const total=products.length,done=nDone(),pct=total?Math.round(done/total*100):0;
+  const h=document.getElementById('saveHint'); if(h)h.textContent=done+'/'+total+' contados · '+pct+'%';
+  const pb=document.querySelector('.sprog .pb i'); if(pb)pb.style.width=pct+'%';
+  clearTimeout(saveT); saveT=setTimeout(()=>saveNow(false),700);
+}
+async function saveNow(showToast){
+  if(!cnt||!Object.keys(dirty).length){ if(showToast)toast('Nada novo para salvar'); return; }
+  const payload={}; Object.keys(dirty).forEach(pid=>{ payload[pid]=cnt.counts[pid]||{qty:null}; });
+  const snapshot=dirty; dirty={};
+  try{ cnt=await api.stockSaveCount(cnt.id,{counts:payload,by:ROLE}); if(showToast)toast('Rascunho salvo'); }
+  catch(e){ Object.assign(dirty,snapshot); toast('Erro ao salvar: '+e.message); }
+}
+async function finalize(){
+  if(!cnt)return;
+  await saveNow(false);
+  const total=products.length, missing=total-nDone();
+  let uncountedMode='zero';
+  if(missing>0){ if(!confirm(missing+' produto(s) sem contagem. Vou considerar como ZERO e gerar a lista. Continuar?')) return; }
+  else { if(!confirm('Finalizar a contagem e gerar a lista de compras?')) return; }
+  try{
+    const r=await api.stockFinalizeCount(cnt.id,{uncountedMode,by:ROLE});
+    toast('Contagem finalizada · lista gerada');
+    location.href='estoque-lista.html'+(r.list&&r.list.id?('?id='+r.list.id):'');
+  }catch(e){ toast('Erro: '+e.message); }
+}
+
+async function loadStore(){
+  if(!store){ renderBody(); return; }
+  try{
+    cnt=await api.stockOpenCount(store,ROLE);
+    const [ps,cs,ds]=await Promise.all([api.stockProducts(store,true).catch(()=>[]),api.stockCategories(store).catch(()=>[]),api.stockDashboard(store).catch(()=>null)]);
+    products=Array.isArray(ps)?ps:[]; cats=Array.isArray(cs)?cs:[]; dash=ds; setConn('live');
+  }catch(e){ setConn('err'); toast('Erro ao carregar: '+e.message); }
+  renderKPIs(); renderBody();
+}
+async function reload(){ await loadStore(); }
+async function boot(){
+  renderTabs();
+  if(!api.hasBackend){ setConn('err'); document.getElementById('spick').innerHTML='<span style="color:var(--faint)">Backend não configurado.</span>'; return; }
+  try{ const so=await api.stores(); stores=Array.isArray(so)?so:[]; }catch(e){ stores=[]; }
+  try{ const saved=sessionStorage.getItem('audens_stock_store'); if(saved&&stores.find(s=>s.id===saved))store=saved; }catch(e){}
+  if(!store&&stores.length)store=stores[0].id;
+  renderPick(); loadStore();
+}
+boot();
+</script>
+</body>
+</html>
