@@ -102,6 +102,7 @@
         <div class="info"><b id="selN">0</b> selecionado(s) <span id="spread" style="color:var(--faint)"></span></div>
         <div style="margin-left:auto;display:flex;gap:8px">
           <button class="btn2 ghost" id="forceBtn" style="display:none" onclick="createRoute(true)">Forçar 1 (exceção)</button>
+          <button class="btn2 ghost" id="force4Btn" style="display:none;border-color:var(--amber);color:var(--amber)" onclick="createRoute(true)">Forçar 4 pedidos</button>
           <button class="btn2 g" id="makeBtn" disabled onclick="createRoute(false)">Criar rota</button>
         </div>
       </div>
@@ -139,7 +140,7 @@
 <script>
 const {api,H,setConn,toast,API}=AudensShell;
 let stores=[],storeMap={},allOrders=[],pool=[],routes=[],suggestions=[],drivers=[],queue=[];
-let selected=new Set(),min=2,max=3,raioKm=2;
+let selected=new Set(),min=2,max=3,hardMax=4,raioKm=2;
 let priority=new Set(),held=new Set(),rejected=new Set(),drvOverride={};
 let autoGroup=false,loneList=[],loneDismissed=new Set();
 
@@ -255,6 +256,7 @@ function renderSelbar(){
   const ok=n>=min&&n<=max;
   document.getElementById('makeBtn').disabled=!ok;
   document.getElementById('forceBtn').style.display=(n===1)?'inline-flex':'none';
+  const f4=document.getElementById('force4Btn'); if(f4)f4.style.display=(n>max&&n<=hardMax)?'inline-flex':'none';
   const os=[...selected].map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);
   let mx=0,any=false; for(let i=0;i<os.length;i++)for(let j=i+1;j<os.length;j++){const dd=hav(coord(os[i]),coord(os[j]));if(dd!=null){any=true;if(dd>mx)mx=dd;}}
   const sp=document.getElementById('spread');
@@ -351,7 +353,7 @@ function renderQueue(){
 }
 
 /* ---------------- ações ---------------- */
-function toggle(id){ if(selected.has(id))selected.delete(id); else{ if(selected.size>=max){toast('Máximo de '+max+' por rota');return;} selected.add(id);} renderPool(); }
+function toggle(id){ if(selected.has(id))selected.delete(id); else{ if(selected.size>=hardMax){toast('Máximo de '+hardMax+' por rota');return;} if(selected.size>=max&&selected.size<hardMax){toast('Acima de '+max+' — use "Forçar 4" para criar');} selected.add(id);} renderPool(); }
 function togPri(id){ priority.has(id)?priority.delete(id):priority.add(id); resortPool(); renderPool(); }
 function togHold(id){ held.add(id); selected.delete(id); renderPool(); }
 function resortPool(){ pool.sort((a,b)=>{ const pa=priority.has(a.id)?0:1,pb=priority.has(b.id)?0:1; if(pa!==pb)return pa-pb; return (a.createdAt<b.createdAt?-1:1); }); }
@@ -359,8 +361,9 @@ async function soloRoute(id){ if(!confirm('Criar rota só com este pedido (exce�
 async function createRoute(force){
   const ids=[...selected];
   if(!force&&(ids.length<min||ids.length>max)){ toast('Selecione de '+min+' a '+max+' pedidos'); return; }
-  if(force&&ids.length!==1){ toast('A exceção é para 1 pedido'); return; }
-  try{ await api.createRoute({orderIds:ids,force:!!force,exceptionReason:force?'exceção manual':null}); toast(force?'Rota criada (exceção)':'Rota criada'); selected.clear(); await load(); }
+  if(force&&(ids.length<1||ids.length>hardMax)){ toast('Forçar aceita de 1 a '+hardMax+' pedidos'); return; }
+  const reason=force?(ids.length<min?'exceção manual (forçar 1)':(ids.length>max?('forçar '+ids.length+' pedidos'):'exceção manual')):null;
+  try{ await api.createRoute({orderIds:ids,force:!!force,exceptionReason:reason}); toast(force?('Rota criada ('+ids.length+' pedido'+(ids.length>1?'s':'')+')'):'Rota criada'); selected.clear(); await load(); }
   catch(e){ toast('Erro: '+e.message); }
 }
 async function approveSug(i){
@@ -420,7 +423,7 @@ async function load(){
     stores=Array.isArray(so)?so:[]; storeMap={}; stores.forEach(s=>storeMap[s.id]=s);
     allOrders=Array.isArray(or_)?or_:[]; routes=Array.isArray(rt)?rt:[];
     drivers=Array.isArray(dr)?dr:[]; queue=Array.isArray(qz)?qz:[]; suggestions=Array.isArray(sug)?sug:[];
-    const cf=cfg||{}; min=cf.minOrdersPerRoute||2; max=cf.maxOrdersPerRoute||3; raioKm=Number(cf.maxDistanceBetweenGroupedOrdersKm)||2; autoGroup=!!cf.autoGroup;
+    const cf=cfg||{}; min=cf.minOrdersPerRoute||2; max=cf.maxOrdersPerRoute||3; hardMax=Number(cf.maxOrdersPerRouteForced)||4; raioKm=Number(cf.maxDistanceBetweenGroupedOrdersKm)||2; autoGroup=!!cf.autoGroup;
     pool=allOrders.filter(o=>o.status==='waiting_grouping'&&!o.assignedRouteId); resortPool();
     const poolIds=new Set(pool.map(o=>o.id)); [...selected].forEach(id=>{ if(!poolIds.has(id))selected.delete(id); });
     setConn('live');

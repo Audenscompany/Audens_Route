@@ -98,7 +98,7 @@ function cardHTML(o){
   }
   return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div>
     <div class="bairro">${bairro}</div>
-    <div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div><div>${H.payBadge(o)}</div>${swap}${act}${deliv}${fin}</div>`;
+    <div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div><div>${H.payBadge?H.payBadge(o):''}</div>${swap}${act}${deliv}${fin}</div>`;
 }
 function askDeliver(orderId){ pickForOrder=orderId; renderPicker(); }
 function closePicker(){ pickForOrder=null; renderPicker(); }
@@ -172,6 +172,15 @@ async function load(){
   }catch(e){setConn('err');}
   renderAccounts();renderKPIs();renderBoard();renderRail();
 }
+// Tick de automação (volta p/ preparo pedidos parados no agrupamento, alertas, autoGroup)
+let _tickBusy=false;
+async function runTick(){
+  if(_tickBusy||!api.hasBackend)return; _tickBusy=true;
+  try{ const r=await api.groupingTick();
+    if(r&&r.returned&&r.returned.length){ toast(r.returned.length+' pedido(s) voltaram p/ Pronto (tempo de rota esgotado, seguem tentando)'); load(); }
+  }catch(e){}finally{ _tickBusy=false; }
+}
+runTick(); setInterval(runTick,30000);
 load(); setInterval(load,5000);
 </script>
 </body>
