@@ -78,8 +78,10 @@ function renderAccounts(){
   document.getElementById('accounts').innerHTML=lead+cards+`<a class="acct add" href="cardapios.html"><span class="plus">${IC.plus}</span>Conectar conta</a>`;
 }
 function renderKPIs(){
-  const c=(sts)=>orders.filter(o=>sts.includes(o.status)).length;
-  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',orders.length,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando agrupamento'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues']];
+  const today=orders.filter(ofToday);
+  const c=(sts)=>today.filter(o=>sts.includes(o.status)).length;
+  const ativos=today.filter(o=>!['delivered','canceled','order_error'].includes(o.status)).length;
+  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',ativos,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando agrupamento'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues hoje']];
   document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div><div class="num">${k[3]}</div><div class="foot">em tempo real</div></div>`).join('');
 }
 function cardHTML(o){
@@ -150,12 +152,14 @@ async function doSwap(driverId){
 }
 function refTime(o){ return new Date(o.readyAt||o.preparingAt||o.createdAt||0).getTime(); }
 function isTodayD(iso){ if(!iso)return false; const d=new Date(iso),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
+// "de hoje": entregues contam pela data de entrega; os demais pela data de criação
+function ofToday(o){ return o.status==='delivered' ? isTodayD(o.finalizedAt||o.deliveredAt||o.updatedAt||o.createdAt) : isTodayD(o.createdAt); }
 function matchSearch(o){ const q=AudensShell.searchTerm(); if(!q)return true; const hay=[(o.displayId||''),(o.externalOrderId||''),(o.customer&&o.customer.name)||'',o.storeName||'',(o.address&&o.address.neighborhood)||'',driverName(o.assignedDriverId)].join(' ').toLowerCase(); return hay.includes(q); }
 document.addEventListener('audens:search',()=>renderBoard());
 function renderBoard(){
   document.getElementById('board').innerHTML=COLS.map(col=>{
     let items=orders.filter(o=>col.st.includes(o.status)&&(!col.pred||col.pred(o))&&matchSearch(o));
-    if(col.st.includes('delivered')&&!AudensShell.searchTerm()) items=items.filter(o=>isTodayD(o.finalizedAt||o.deliveredAt||o.updatedAt||o.createdAt)); // só de hoje (a busca vê todos)
+    if(!AudensShell.searchTerm()) items=items.filter(ofToday); // só de hoje (a busca vê todos)
     items=items.sort((a,b)=>refTime(a)-refTime(b));
     const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
     return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body">${cards}</div></div>`;

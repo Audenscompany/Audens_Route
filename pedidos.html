@@ -26,8 +26,10 @@ const canFinalize=ROLE==='admin'||ROLE==='operator';
 async function finalizeOrder(id){ try{ await api.finalizeOrder(id,ROLE,true); toast('Pedido finalizado (conferido)'); load(); }catch(e){ toast('Erro: '+e.message); } }
 async function unfinalizeOrder(id){ try{ await api.finalizeOrder(id,ROLE,false); toast('Reaberto para conferência'); load(); }catch(e){ toast('Erro: '+e.message); } }
 function renderKPIs(){
-  const c=(sts)=>orders.filter(o=>sts.includes(o.status)).length;
-  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',orders.length,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues']];
+  const today=orders.filter(ofToday);
+  const c=(sts)=>today.filter(o=>sts.includes(o.status)).length;
+  const ativos=today.filter(o=>!['delivered','canceled','order_error'].includes(o.status)).length;
+  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',ativos,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues hoje']];
   document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div><div class="num">${k[3]}</div><div class="foot">em tempo real</div></div>`).join('');
 }
 function cardHTML(o){
@@ -44,7 +46,7 @@ function cardHTML(o){
     if(!o.finalized && canFinalize) fin=`<button class="act" style="background:#34d399;color:#04241a;margin-top:6px" onclick="finalizeOrder('${o.id}')">✓ Finalizar (conferir)</button>`;
     else if(o.finalized) fin=`<div style="font-size:10px;color:var(--green);margin-top:6px">✓ Finalizado${o.finalizedBy?(' · '+o.finalizedBy):''}</div>${canFinalize?`<button class="act" style="background:none;border:1px solid var(--line);color:var(--faint);margin-top:5px" onclick="unfinalizeOrder('${o.id}')">reabrir</button>`:''}`;
   }
-  return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div><div class="bairro">${bairro}</div><div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div><div>${H.payBadge(o)}</div>${swap}${act}${deliv}${fin}</div>`;
+  return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div><div class="bairro">${bairro}</div><div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span><span class="val">${H.money(o.total)}</span></div><div>${H.payBadge?H.payBadge(o):''}</div>${swap}${act}${deliv}${fin}</div>`;
 }
 function askDeliver(orderId){ pickForOrder=orderId; renderPicker(); }
 function closePicker(){ pickForOrder=null; renderPicker(); }
@@ -96,12 +98,13 @@ async function doSwap(driverId){
 }
 function refTime(o){ return new Date(o.readyAt||o.preparingAt||o.createdAt||0).getTime(); }
 function isTodayD(iso){ if(!iso)return false; const d=new Date(iso),n=new Date(); return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate(); }
+function ofToday(o){ return o.status==='delivered' ? isTodayD(o.finalizedAt||o.deliveredAt||o.updatedAt||o.createdAt) : isTodayD(o.createdAt); }
 function matchSearch(o){ const q=AudensShell.searchTerm(); if(!q)return true; const hay=[(o.displayId||''),(o.externalOrderId||''),(o.customer&&o.customer.name)||'',o.storeName||'',(o.address&&o.address.neighborhood)||'',driverName(o.assignedDriverId)].join(' ').toLowerCase(); return hay.includes(q); }
 document.addEventListener('audens:search',()=>renderBoard());
 function renderBoard(){
   document.getElementById('board').innerHTML=COLS.map(col=>{
     let items=orders.filter(o=>col.st.includes(o.status)&&(!col.pred||col.pred(o))&&matchSearch(o));
-    if(col.st.includes('delivered')&&!AudensShell.searchTerm()) items=items.filter(o=>isTodayD(o.finalizedAt||o.deliveredAt||o.updatedAt||o.createdAt)); // só de hoje (a busca vê todos)
+    if(!AudensShell.searchTerm()) items=items.filter(ofToday); // só de hoje (a busca vê todos)
     items=items.sort((a,b)=>refTime(a)-refTime(b));
     const cards=items.length?items.map(cardHTML).join(''):`<div class="empty-col">sem pedidos</div>`;
     return `<div><div class="col-h"><span class="nm">${col.nm}</span><span class="ct">${items.length}</span></div><div class="col-body" style="max-height:none">${cards}</div></div>`;
