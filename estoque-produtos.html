@@ -25,7 +25,7 @@
 <body>
 <template id="page">
   <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Produtos</h1><p>Cadastro por loja. Defina a quantidade necessária para dia de semana e fim de semana.</p></div>
-    <button class="btn" style="margin-left:auto" onclick="openForm()">+ Novo produto</button></div>
+    <div style="margin-left:auto;display:flex;gap:8px"><button class="btn" style="background:var(--card2);border:1px solid var(--line);color:var(--dim)" onclick="reseed()">↺ Recadastrar listas</button><button class="btn" onclick="openForm()">+ Novo produto</button></div></div>
   <div class="stab" id="stab"></div>
   <div class="spick" id="spick"></div>
   <div class="pfilter"><input id="q" placeholder="Buscar produto…" oninput="render()" /><select id="fcat" onchange="render()"><option value="">Todas as categorias</option></select><span id="pcount" style="font-size:12px;color:var(--faint);margin-left:auto"></span></div>
@@ -104,6 +104,7 @@ async function saveForm(id){
   catch(e){ toast('Erro: '+e.message); }
 }
 async function delProd(id){ const p=products.find(x=>x.id===id); if(!confirm('Excluir "'+(p?p.name:'')+'"?'))return; try{ await api.stockDelProduct(id); toast('Excluído'); await loadStore(); }catch(e){ toast('Erro: '+e.message); } }
+async function reseed(){ if(!confirm('Isto APAGA todos os produtos e categorias das duas lojas e recria a partir das listas originais (Pizza FC e Burger FC). Use para corrigir duplicados. As quantidades-alvo voltam a zero. Continuar?'))return; try{ const r=await api.stockReseed(); toast('Recadastrado: '+(r.removedProducts||0)+' removidos, listas recriadas'); await loadStore(); }catch(e){ toast('Erro: '+e.message); } }
 
 async function loadStore(){
   try{
