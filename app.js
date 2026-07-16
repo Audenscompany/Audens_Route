@@ -172,6 +172,7 @@
     stockListsHistory:(store)=>j(API+'/api/stock/lists/history?store='+encodeURIComponent(store||'')),
     stockDashboard:(store)=>j(API+'/api/stock/dashboard?store='+encodeURIComponent(store||'')),
     stockSeed:()=>j(API+'/api/stock/seed',{method:'POST'}),
+    stockReseed:()=>j(API+'/api/stock/reseed',{method:'POST'}),
   };
 
   // helpers de formatação/domínio
