@@ -23,13 +23,25 @@ const {IC,api,H,COLS,NEXT,setConn,toast}=AudensShell;
 let stores=[],storeMap={},orders=[],drivers=[],pickForOrder=null;
 const ROLE=(()=>{try{return sessionStorage.getItem('audens_role')||'';}catch(e){return '';}})();
 const canFinalize=ROLE==='admin'||ROLE==='operator';
+const isKitchen=ROLE==='kitchen';
+// Cozinha só enxerga os pedidos que estão na loja (recebido/preparo/pronto)
+const KITCHEN_COLS=[
+  {nm:'Recebido',color:'#60a5fa',st:['received','confirmed']},
+  {nm:'Em preparo',color:'#fbbf24',st:['preparing']},
+  {nm:'Pronto',color:'#34d399',st:['ready']},
+];
 async function finalizeOrder(id){ try{ await api.finalizeOrder(id,ROLE,true); toast('Pedido finalizado (conferido)'); load(); }catch(e){ toast('Erro: '+e.message); } }
 async function unfinalizeOrder(id){ try{ await api.finalizeOrder(id,ROLE,false); toast('Reaberto para conferência'); load(); }catch(e){ toast('Erro: '+e.message); } }
 function renderKPIs(){
   const today=orders.filter(ofToday);
   const c=(sts)=>today.filter(o=>sts.includes(o.status)).length;
   const ativos=today.filter(o=>!['delivered','canceled','order_error'].includes(o.status)).length;
-  const K=[['inbox','rgba(96,165,250,.15)','#60a5fa',ativos,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues hoje']];
+  let K;
+  if(isKitchen){
+    K=[['inbox','rgba(96,165,250,.15)','#60a5fa',c(['received','confirmed']),'Recebidos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos']];
+  } else {
+    K=[['inbox','rgba(96,165,250,.15)','#60a5fa',ativos,'Pedidos ativos'],['chef','rgba(251,191,36,.15)','#fbbf24',c(['preparing']),'Em preparo'],['check','rgba(52,211,153,.15)','#34d399',c(['ready']),'Prontos'],['package','rgba(139,92,246,.15)','#a855f7',c(['waiting_grouping','grouped']),'Aguardando'],['truck','rgba(34,211,238,.15)','#22d3ee',c(['waiting_driver','sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer']),'Em rota'],['thumb','rgba(52,211,153,.15)','#34d399',c(['delivered']),'Entregues hoje']];
+  }
   document.getElementById('kpis').innerHTML=K.map(k=>`<div class="kpi"><div class="top"><div class="ic" style="background:${k[1]};color:${k[2]}">${IC[k[0]]}</div>${k[4]}</div><div class="num">${k[3]}</div><div class="foot">em tempo real</div></div>`).join('');
 }
 function cardHTML(o){
@@ -37,6 +49,10 @@ function cardHTML(o){
   const bairro=A.neighborhood||(A.text?(A.text.length>30?A.text.slice(0,30)+'…':A.text):'')||'—';
   const nx=NEXT[o.status];
   const act=nx?`<button class="act" style="background:${nx[2]}" onclick="advance('${o.id}','${nx[0]}')">${nx[1]}</button>`:'';
+  if(isKitchen){
+    // Card enxuto para a cozinha: nº, loja, bairro, tempo e só o botão de avançar (Iniciar preparo / Marcar pronto)
+    return `<div class="ocard"><div class="r1"><div class="lg">${H.logoFor(o,storeMap)}</div><div><div class="oid">Nº ${o.displayId||o.externalOrderId||''}</div><div class="store">${o.storeName||''}</div></div></div><div class="bairro">${bairro}</div><div class="r2"><span class="tm">${IC.clock} ${H.rel(o.readyAt||o.preparingAt||o.createdAt)}</span></div>${act}</div>`;
+  }
   const deliv=o.status!=='delivered'?`<button class="act" style="background:none;border:1px solid var(--line);color:var(--dim);margin-top:6px" onclick="askDeliver('${o.id}')">🛵 entregue por motoboy</button>`:'';
   const inRoute=['sent_to_driver','accepted_by_driver','out_for_delivery','arrived_at_customer'].includes(o.status);
   const showSwap=(inRoute&&o.assignedRouteId)||o.status==='delivered';
@@ -102,7 +118,9 @@ function ofToday(o){ return o.status==='delivered' ? isTodayD(o.finalizedAt||o.d
 function matchSearch(o){ const q=AudensShell.searchTerm(); if(!q)return true; const hay=[(o.displayId||''),(o.externalOrderId||''),(o.customer&&o.customer.name)||'',o.storeName||'',(o.address&&o.address.neighborhood)||'',driverName(o.assignedDriverId)].join(' ').toLowerCase(); return hay.includes(q); }
 document.addEventListener('audens:search',()=>renderBoard());
 function renderBoard(){
-  document.getElementById('board').innerHTML=COLS.map(col=>{
+  const cols=isKitchen?KITCHEN_COLS:COLS;
+  document.getElementById('board').className='board '+(isKitchen?'three':'six');
+  document.getElementById('board').innerHTML=cols.map(col=>{
     let items=orders.filter(o=>col.st.includes(o.status)&&(!col.pred||col.pred(o))&&matchSearch(o));
     if(!AudensShell.searchTerm()) items=items.filter(ofToday); // só de hoje (a busca vê todos)
     items=items.sort((a,b)=>refTime(a)-refTime(b));
@@ -121,6 +139,7 @@ async function load(){
   }catch(e){setConn('err');}
   renderKPIs();renderBoard();
 }
+if(isKitchen){ const h=document.querySelector('.page-head h1'); if(h)h.textContent='Cozinha'; const p=document.querySelector('.page-head p'); if(p)p.textContent='Marque os pedidos como prontos. Quando sai para entrega, o pedido some daqui.'; }
 load(); setInterval(load,4000);
 </script>
 </body>

@@ -93,14 +93,6 @@
       <div class="err" id="err"></div>
     </form>
 
-    <div class="divider">ACESSO RÁPIDO</div>
-    <div class="roles">
-      <button class="role" onclick="goAs('admin')"><span class="ri" style="background:rgba(168,85,247,.16);color:#c084fc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3Z"/></svg></span><div><div class="rt">Admin</div><div class="rs">Painel administrativo</div></div></button>
-      <button class="role" onclick="goAs('operator')"><span class="ri" style="background:rgba(96,165,250,.16);color:#60a5fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg></span><div><div class="rt">Operador</div><div class="rs">Gerenciar operações</div></div></button>
-      <button class="role" onclick="goAs('kitchen')"><span class="ri" style="background:rgba(245,181,68,.16);color:#f5b544"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 20h10"/><path d="M6.5 17h11v-2.5a4 4 0 0 0-1.2-8.4A4 4 0 0 0 9 4.6 4 4 0 0 0 6.5 14V17Z"/></svg></span><div><div class="rt">Cozinha</div><div class="rs">Ver pedidos</div></div></button>
-      <button class="role" onclick="goAs('driver')"><span class="ri" style="background:rgba(52,211,153,.16);color:#34d399"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="7.5" r="3.2"/><path d="M5 20c0-3.4 3-5.2 7-5.2s7 1.8 7 5.2"/></svg></span><div><div class="rt">Motoboy</div><div class="rs">Fazer entregas</div></div></button>
-    </div>
-
     <div class="foot">
       <span class="badge" id="modeTag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3Z"/></svg>Modo demonstração</span>
       <div class="fs" id="footMsg">Preencha <code>config.js</code> com seu Firebase para o login real.</div>
@@ -112,9 +104,10 @@
   const CFG = window.AUDENS_CONFIG || {};
   const HAS_FB = !!(CFG.firebase && CFG.firebase.apiKey);
 
-  function pageForRole(role){ return role === 'driver' ? 'motoboy.html' : 'dashboard.html'; }
+  // O sistema reconhece o papel pelo e-mail da conta (via /api/whoami) e leva a pessoa
+  // direto para a tela dela — sem precisar escolher perfil.
+  function pageForRole(role){ if(role==='driver')return 'motoboy.html'; if(role==='kitchen')return 'pedidos.html'; return 'dashboard.html'; }
   function sessionStorageSafe(k,v){ try{ sessionStorage.setItem(k,v);}catch(e){} }
-  function goAs(role){ sessionStorageSafe('audens_role', role); location.href = pageForRole(role); }
 
   function togglePw(){
     const i=document.getElementById('password');
@@ -148,7 +141,7 @@
     err.className='err'; err.textContent = '';
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    if (!HAS_FB){ err.textContent = 'Firebase não configurado — use o acesso rápido abaixo (ou preencha config.js).'; return; }
+    if (!HAS_FB){ err.textContent = 'Firebase não configurado — preencha config.js para o login funcionar.'; return; }
     btn.disabled = true; btn.innerHTML = 'Entrando…';
     try{
       const appMod  = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');

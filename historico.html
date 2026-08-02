@@ -76,7 +76,7 @@ function render(){
         <td><span class="lg"><span class="im">${H.logoFor(o,storeMap)}</span>${o.storeName||''}</span></td>
         <td>${bairro}</td>
         <td>${money(o.total)}</td>
-        <td>${H.payBadge(o)}</td>
+        <td>${H.payBadge?H.payBadge(o):''}</td>
         <td>${hhmm(when)}</td>
         <td>${o.assignedDriverId?driverName(o.assignedDriverId):'<span style="color:var(--faint)">sem motoboy</span>'}</td>
         <td>${o.finalized?'<span class="badge fin">Finalizado</span>':'<span class="badge ent">Entregue</span>'}</td>

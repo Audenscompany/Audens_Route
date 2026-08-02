@@ -59,6 +59,7 @@ function render(){
         <select onchange="changeRole('${u.uid}',this.value)">
           ${Object.keys(ROLE_LABEL).map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_LABEL[r]}</option>`).join('')}
         </select>
+        <button class="del" onclick="resetPass('${u.uid}','${(u.name||'').replace(/'/g,'')}')">redefinir senha</button>
         <button class="del" onclick="removeUser('${u.uid}','${(u.name||'').replace(/'/g,'')}')">remover</button>
       </div>
     </div>`).join('')+`</div>`;
@@ -79,6 +80,13 @@ async function addUser(){
 }
 async function changeRole(uid,role){ try{ await api.setUserRole(uid,role); toast('Acesso atualizado'); load(); }catch(e){ toast('Erro: '+e.message); } }
 async function removeUser(uid,name){ if(!confirm(`Remover o login de "${name}"?`))return; try{ await api.delUser(uid); toast('Removido'); load(); }catch(e){ toast('Erro: '+e.message); } }
+async function resetPass(uid,name){
+  const p=prompt(`Nova senha para "${name}" (mínimo 6 caracteres).\nAnote e entregue essa senha para a pessoa:`);
+  if(p===null)return;
+  if(p.length<6){ toast('A senha precisa ter ao menos 6 caracteres'); return; }
+  try{ await api.resetUserPassword(uid,p); toast('Senha redefinida! Entregue a nova senha para '+name); }
+  catch(e){ toast('Erro: '+e.message); }
+}
 document.getElementById('addBtn').onclick=addUser;
 load();
 </script>

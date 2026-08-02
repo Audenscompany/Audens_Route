@@ -60,26 +60,34 @@
 
   function build(){
     const page = window.PAGE || '';
+    let role=''; try{ role=sessionStorage.getItem('audens_role')||''; }catch(e){}
+    // Perfis restritos: cozinha só vê Pedidos e Estoque
+    const ROLE_ALLOW={ kitchen:['pedidos','estoque'] };
+    const allow=ROLE_ALLOW[role]||null;
+    if(allow && page && !allow.includes(page)){ location.replace('pedidos.html'); return; }
+    const navList=allow?NAV.filter(n=>allow.includes(n[3])):NAV;
     const t = nowStr();
     const app=document.createElement('div'); app.className='app';
     app.innerHTML=`
       <aside class="sidebar">
         <div class="logo">${logoHtml()}</div>
-        <nav class="nav">${NAV.map(n=>`<a class="${n[3]===page?'active':''}" href="${n[2]}">${IC[n[0]]}<span>${n[1]}</span></a>`).join('')}</nav>
+        <nav class="nav">${navList.map(n=>`<a class="${n[3]===page?'active':''}" href="${n[2]}">${IC[n[0]]}<span>${n[1]}</span></a>`).join('')}</nav>
         <div class="side-bottom">
           <div class="plan"><span class="pct">78%</span><div class="t">Plano Profissional</div><div class="v">Válido até 24/07/2025</div><div class="bar"><i></i></div><button>Gerenciar plano</button></div>
           <div class="support">${IC.support}<div><b style="font-size:12px;color:var(--text)">Suporte</b><br><span style="font-size:11px;color:var(--faint)">Central de ajuda</span></div></div>
         </div>
       </aside>
+      <div class="scrim" id="navScrim" onclick="AudensShell.closeMenu()"></div>
       <div class="main">
         <header class="topbar">
+          <button class="hamb" id="hambBtn" onclick="AudensShell.toggleMenu()" aria-label="Menu">${IC.menu||'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>'}</button>
           <div class="search">${IC.search}<input id="globalSearch" autocomplete="off" placeholder="Buscar pedidos, lojas, motoboys…" oninput="AudensShell._search(this.value)" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit" /><span class="kbd" id="searchClear" style="cursor:pointer;display:none" onclick="AudensShell._clearSearch()">limpar ✕</span></div>
           <div class="spacer"></div>
           <div class="conn" id="connState">Conectando…</div>
-          <div class="chip">${IC.cal} ${t.date}</div>
-          <div class="chip">${IC.clock} ${t.time}</div>
+          <div class="chip chip-date">${IC.cal} ${t.date}</div>
+          <div class="chip chip-time">${IC.clock} ${t.time}</div>
           <div class="bell">${IC.bell}</div>
-          <div class="user" onclick="AudensShell.logout()"><div class="av" id="userAv">A<span class="on"></span></div><div><div class="nm" id="userNm">Audens</div><div class="rl" id="userRl">Operador</div></div>${IC.logout.replace('width="1.8"','')}</div>
+          <div class="user" onclick="AudensShell.logout()"><div class="av" id="userAv">A<span class="on"></span></div><div class="uinfo"><div class="nm" id="userNm">Audens</div><div class="rl" id="userRl">Operador</div></div>${IC.logout.replace('width="1.8"','')}</div>
         </header>
         <div class="content" id="content"></div>
         <div class="foot"><span>Audens Route · Sistema Inteligente de Logística e Entregas</span><span>© ${new Date().getFullYear()} Audens Route</span></div>
@@ -122,6 +130,7 @@
     createUser:(b)=>j(API+'/api/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}),
     setUserRole:(uid,role)=>j(API+'/api/users/'+uid+'/role',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({role})}),
     delUser:(uid)=>j(API+'/api/users/'+uid,{method:'DELETE'}),
+    resetUserPassword:(uid,password)=>j(API+'/api/users/'+uid+'/password',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})}),
     whoami:(email)=>j(API+'/api/whoami?email='+encodeURIComponent(email)),
     // motoboys
     drivers:()=>j(API+'/api/drivers'),
@@ -201,8 +210,10 @@
   function _search(v){ window.__audensSearch=(v||'').trim().toLowerCase(); const c=document.getElementById('searchClear'); if(c)c.style.display=window.__audensSearch?'inline-block':'none'; document.dispatchEvent(new CustomEvent('audens:search')); }
   function _clearSearch(){ const i=document.getElementById('globalSearch'); if(i)i.value=''; _search(''); }
   function searchTerm(){ return window.__audensSearch||''; }
+  function toggleMenu(){ const a=document.querySelector('.app'); if(a)a.classList.toggle('nav-open'); }
+  function closeMenu(){ const a=document.querySelector('.app'); if(a)a.classList.remove('nav-open'); }
   // atalho ⌘K / Ctrl+K foca a busca
   document.addEventListener('keydown',(e)=>{ if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); const i=document.getElementById('globalSearch'); if(i)i.focus(); } });
-  window.AudensShell={ IC, LOGO, NAV, api, H, COLS, NEXT, setConn, toast, logout, API, _search, _clearSearch, searchTerm };
+  window.AudensShell={ IC, LOGO, NAV, api, H, COLS, NEXT, setConn, toast, logout, API, _search, _clearSearch, searchTerm, toggleMenu, closeMenu };
   build();
 })();

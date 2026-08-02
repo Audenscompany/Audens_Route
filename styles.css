@@ -164,3 +164,46 @@ svg{display:block;}
 .litem.edited .ed input{border-color:var(--amber);color:var(--amber);}
 .litem .rm{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;} .litem .rm:hover{color:var(--red,#f87171);}
 .sbadge{font-size:10px;font-weight:800;border-radius:6px;padding:3px 8px;} .sbadge.dr{color:var(--amber);background:rgba(245,181,68,.14);} .sbadge.fi{color:var(--green);background:rgba(52,211,153,.14);} .sbadge.ex{color:var(--violet3);background:rgba(124,58,237,.16);}
+
+/* ================= COLUNA TRIPLA (cozinha) ================= */
+.board.three{grid-template-columns:repeat(3,minmax(150px,1fr));}
+
+/* ================= HAMBÚRGUER + GAVETA (mobile) ================= */
+.hamb{display:none;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;background:var(--card);border:1px solid var(--line);color:var(--dim);cursor:pointer;flex-shrink:0;}
+.hamb svg{width:20px;height:20px;}
+.scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;visibility:hidden;transition:opacity .2s;z-index:55;}
+.app.nav-open .scrim{opacity:1;visibility:visible;}
+
+/* ---- TABLET: rail de ícones (mantido) ---- */
+@media(max-width:900px){
+  .app{grid-template-columns:70px 1fr;}
+  .sidebar .txt,.nav a span,.plan,.support span,.support div{display:none!important;}
+  .nav a{justify-content:center;}
+}
+
+/* ---- CELULAR: gaveta lateral + layout de uma coluna ---- */
+@media(max-width:760px){
+  .app{grid-template-columns:1fr;}
+  .hamb{display:inline-flex;}
+  .scrim{display:block;}
+  .sidebar{position:fixed;left:0;top:0;height:100dvh;width:250px;max-width:84vw;padding:20px 16px;transform:translateX(-100%);transition:transform .25s ease;z-index:60;box-shadow:0 18px 50px rgba(0,0,0,.55);}
+  .app.nav-open .sidebar{transform:translateX(0);}
+  .sidebar .txt,.nav a span,.plan,.support span,.support div{display:block!important;}
+  .nav a{justify-content:flex-start;}
+  .topbar{padding:10px 14px;gap:10px;position:sticky;}
+  .chip-date,.chip-time,.bell{display:none;}
+  .user{gap:0;} .user .uinfo{display:none;}
+  .user .av{width:36px;height:36px;}
+  .topbar .search{min-width:0;flex:1;}
+  .content{padding:16px 14px 26px!important;gap:16px;}
+  .page-head h1{font-size:21px;}
+  .kpis{grid-template-columns:repeat(2,1fr)!important;gap:10px;}
+  /* quadro: rolar na horizontal, uma coluna por vez */
+  .board.six,.board.three{grid-auto-flow:column;grid-auto-columns:84vw;grid-template-columns:none;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+  .board>div{scroll-snap-align:start;}
+  .grid2{grid-template-columns:1fr;}
+  /* estoque: seletor de loja e sub-nav já quebram; inputs maiores no toque */
+  .stab{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
+  .stab a{white-space:nowrap;}
+  .crow .qin input{width:74px;font-size:17px;}
+}
