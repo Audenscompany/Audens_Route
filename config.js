@@ -1,22 +1,22 @@
 /* ============================================================
    Audens Route — configuração compartilhada do frontend
-   Preenchido com o projeto Firebase "audens-route".
-   Enquanto apiUrl estiver vazio, o painel usa o Firebase em tempo real
-   e as ações que exigem regra de negócio (mudar status) ficam locais.
+   Firebase apontando para o projeto audens-route-501917 (nº 452139275816),
+   que é o MESMO projeto do backend (Cloud Run) e onde ficam os dados e os
+   usuários criados pelo app. Antes apontava para o projeto errado (406…),
+   por isso só o master conseguia logar.
    ============================================================ */
 window.AUDENS_CONFIG = {
   // URL do backend (Cloud Run) — Audens Route API.
   apiUrl: "https://audens-route-api-452139275816.southamerica-east1.run.app",
 
-  // firebaseConfig do projeto audens-route (config de cliente — não é segredo).
+  // firebaseConfig do projeto audens-route-501917 (config de cliente — não é segredo).
   firebase: {
-    apiKey: "AIzaSyALkNr5ufB8DQ54DJFHAX7-obcg8N7SM8o",
-    authDomain: "audens-route.firebaseapp.com",
-    projectId: "audens-route",
-    storageBucket: "audens-route.firebasestorage.app",
-    messagingSenderId: "406257478885",
-    appId: "1:406257478885:web:b2eb532fd23f575e34780c",
-    measurementId: "G-9JL27K3LTE"
+    apiKey: "AIzaSyDGmyAT5cBJK4TUPYbudIl1B_zzLwOwcIo",
+    authDomain: "audens-route-501917.firebaseapp.com",
+    projectId: "audens-route-501917",
+    storageBucket: "audens-route-501917.firebasestorage.app",
+    messagingSenderId: "452139275816",
+    appId: "1:452139275816:web:5b1146c28e06507271071d"
   }
 };
 
