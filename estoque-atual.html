@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0913" />
+<link rel="stylesheet" href="styles.css" />
+<title>Audens Route — Estoque atual</title>
+<style>
+  .pfilter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .pfilter input,.pfilter select{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;}
+  .ptable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .ptable th{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--card2);}
+  .ptable td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12.5px;} .ptable tr:last-child td{border-bottom:none;}
+  .ptable .catrow td{background:var(--card2);font-weight:800;font-size:11px;text-transform:uppercase;color:var(--violet3);letter-spacing:.03em;}
+  .qty{font-weight:800;font-size:14px;} .qty.zero{color:#f87171;} .qty.na{color:var(--faint);font-weight:600;font-size:12px;}
+</style>
+</head>
+<body>
+<template id="page">
+  <div class="page-head" style="display:flex;align-items:flex-start"><div><h1>Estoque atual</h1><p>Quantidade da última contagem de cada produto. Para atualizar, faça uma nova contagem.</p></div>
+    <button class="btn" style="margin-left:auto" onclick="loadStore()">↻ Atualizar</button></div>
+  <div class="stab" id="stab"></div>
+  <div class="spick" id="spick"></div>
+  <div class="skpis" id="kpis"></div>
+  <div class="pfilter"><input id="q" placeholder="Buscar produto…" oninput="render()" /><select id="fcat" onchange="render()"><option value="">Todas as categorias</option></select><label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--dim);cursor:pointer"><input type="checkbox" id="onlyLow" onchange="render()"> só zerados/baixos</label><span id="pcount" style="font-size:12px;color:var(--faint);margin-left:auto"></span></div>
+  <div id="body"><div class="empty" style="color:var(--faint);text-align:center;padding:30px">Carregando…</div></div>
+</template>
+
+<script>window.PAGE='estoque';</script>
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script src="app.js"></script>
+<script>
+const {api,setConn,toast}=AudensShell;
+const TABS=[['estoque-contagem.html','Contagem'],['estoque-atual.html','Estoque atual'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
+let stores=[],store='',products=[],cats=[];
+function num(v){ return v===''||v==null?null:(Math.round(Number(v)*100)/100); }
+function renderTabs(){ document.getElementById('stab').innerHTML=TABS.map(t=>`<a href="${t[0]}" class="${t[0]==='estoque-atual.html'?'on':''}">${t[1]}</a>`).join(''); }
+function storeLogo(s){ const n=(s.name||'').toLowerCase(); return s.logoUrl?`<img src="${s.logoUrl}">`:(n.includes('burg')?AudensShell.LOGO.burger:(n.includes('pizz')?AudensShell.LOGO.pizza:AudensShell.LOGO.store)); }
+function renderPick(){ document.getElementById('spick').innerHTML=stores.map(s=>`<div class="schip ${s.id===store?'on':''}" onclick="pickStore('${s.id}')"><span class="im">${storeLogo(s)}</span>${s.name}</div>`).join(''); }
+function pickStore(id){ store=id; try{sessionStorage.setItem('audens_stock_store',id);}catch(e){} renderPick(); loadStore(); }
+function catOrder(){ const map={}; cats.forEach(c=>map[c.name]=c.displayOrder); const names=[...new Set(products.map(p=>p.category||'Geral'))]; names.sort((a,b)=>((map[a]??999)-(map[b]??999))||a.localeCompare(b)); return names; }
+function lastDate(){ let mx=null; products.forEach(p=>{ if(p.lastCountedAt&&(!mx||p.lastCountedAt>mx))mx=p.lastCountedAt; }); return mx; }
+function fmtDate(iso){ if(!iso)return '—'; const d=new Date(iso); return d.toLocaleDateString('pt-BR')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+
+function renderKPIs(){
+  const contados=products.filter(p=>p.lastCounted!=null).length;
+  const zerados=products.filter(p=>Number(p.lastCounted)===0).length;
+  document.getElementById('kpis').innerHTML=`
+    <div class="skpi"><div class="n" style="color:var(--violet3)">${products.length}</div><div class="l">Produtos ativos</div><div class="s">${contados} com contagem</div></div>
+    <div class="skpi"><div class="n" style="color:${zerados?'#f87171':'var(--green)'}">${zerados}</div><div class="l">Zerados</div><div class="s">acabou / repor</div></div>
+    <div class="skpi"><div class="n" style="font-size:15px">${fmtDate(lastDate())}</div><div class="l">Última contagem</div><div class="s">nesta loja</div></div>`;
+}
+function render(){
+  const q=(document.getElementById('q').value||'').trim().toLowerCase();
+  const fc=document.getElementById('fcat').value;
+  const low=document.getElementById('onlyLow').checked;
+  let list=products.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!fc||(p.category||'Geral')===fc)&&(!low||Number(p.lastCounted||0)<=0));
+  document.getElementById('pcount').textContent=list.length+' produto(s)';
+  const box=document.getElementById('body');
+  if(!list.length){ box.innerHTML='<div class="empty" style="color:var(--faint);text-align:center;padding:30px">Nenhum produto neste filtro.</div>'; return; }
+  let html='<table class="ptable"><thead><tr><th>Produto</th><th>Un</th><th>Estoque atual</th><th>Contado em</th></tr></thead><tbody>';
+  for(const cat of catOrder()){
+    const items=list.filter(p=>(p.category||'Geral')===cat); if(!items.length)continue;
+    html+=`<tr class="catrow"><td colspan="4">${cat} · ${items.length}</td></tr>`;
+    for(const p of items){
+      const q0=num(p.lastCounted);
+      const cell = q0==null ? '<span class="qty na">sem contagem</span>' : `<span class="qty ${q0<=0?'zero':''}">${q0} <span style="font-size:11px;color:var(--dim);font-weight:600">${p.unit}</span></span>`;
+      html+=`<tr><td><b>${p.name}</b></td><td>${p.unit}</td><td>${cell}</td><td style="color:var(--faint);font-size:11.5px">${fmtDate(p.lastCountedAt)}</td></tr>`;
+    }
+  }
+  html+='</tbody></table>';
+  box.innerHTML=html;
+}
+function fillCatFilter(){ const sel=document.getElementById('fcat'); const cur=sel.value; const names=catOrder(); sel.innerHTML='<option value="">Todas as categorias</option>'+names.map(n=>`<option ${n===cur?'selected':''}>${n}</option>`).join(''); }
+
+async function loadStore(){
+  try{
+    const [ps,cs]=await Promise.all([api.stockProducts(store,true).catch(()=>[]),api.stockCategories(store).catch(()=>[])]);
+    products=Array.isArray(ps)?ps:[]; cats=Array.isArray(cs)?cs:[]; setConn('live');
+  }catch(e){ setConn('err'); }
+  renderKPIs(); fillCatFilter(); render();
+}
+async function boot(){
+  renderTabs();
+  if(!api.hasBackend){ setConn('err'); return; }
+  try{ stores=await api.stores(); }catch(e){ stores=[]; }
+  try{ const saved=sessionStorage.getItem('audens_stock_store'); if(saved&&stores.find(s=>s.id===saved))store=saved; }catch(e){}
+  if(!store&&stores.length)store=stores[0].id;
+  renderPick(); loadStore();
+}
+boot();
+</script>
+</body>
+</html>
