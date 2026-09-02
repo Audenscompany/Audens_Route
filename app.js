@@ -83,6 +83,7 @@
           <button class="hamb" id="hambBtn" onclick="AudensShell.toggleMenu()" aria-label="Menu">${IC.menu||'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>'}</button>
           <div class="search">${IC.search}<input id="globalSearch" autocomplete="off" placeholder="Buscar pedidos, lojas, motoboys…" oninput="AudensShell._search(this.value)" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:inherit" /><span class="kbd" id="searchClear" style="cursor:pointer;display:none" onclick="AudensShell._clearSearch()">limpar ✕</span></div>
           <div class="spacer"></div>
+          <div class="unitsel" id="unitSel" style="display:none;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:6px 11px;border:1px solid var(--line2);border-radius:10px;background:var(--card);white-space:nowrap"></div>
           <div class="conn" id="connState">Conectando…</div>
           <div class="chip chip-date">${IC.cal} ${t.date}</div>
           <div class="chip chip-time">${IC.clock} ${t.time}</div>
@@ -96,7 +97,41 @@
     const tpl=document.getElementById('page');
     if(tpl) document.getElementById('content').appendChild(tpl.content.cloneNode(true));
     // usuário logado (sessão)
-    try{const role=sessionStorage.getItem('audens_role'); if(role){document.getElementById('userRl').textContent={admin:'Administrador',operator:'Operador',kitchen:'Cozinha',driver:'Motoboy'}[role]||role;}}catch(e){}
+    try{const role=sessionStorage.getItem('audens_role'); if(role){document.getElementById('userRl').textContent={admin:'Administrador',operator:'Operador',kitchen:'Cozinha',driver:'Motoboy',owner:'Dono',manager:'Gerente',viewer:'Leitura'}[role]||role;}}catch(e){}
+    // Contexto multi-tenant (organização/unidade) — best-effort, não bloqueia a página.
+    initTenantContext();
+  }
+
+  // ---------- Contexto multi-tenant (organização + unidade) ----------
+  // Puxa /api/me (com token). Se não houver token/membership ainda, silencia
+  // e mantém 100% o comportamento atual.
+  async function initTenantContext(){
+    try{
+      const me=await j(API+'/api/me');
+      if(!me) return;
+      window.AudensContext=me;
+      const org=me.activeOrganization; const units=me.units||[];
+      let unitId=''; try{ unitId=sessionStorage.getItem('audens_unit')||''; }catch(e){}
+      if(!units.find(u=>u.id===unitId)) unitId=units[0]?units[0].id:'';
+      try{ if(unitId) sessionStorage.setItem('audens_unit',unitId); if(org) sessionStorage.setItem('audens_org',org.id); }catch(e){}
+      renderUnitSel(org,units,unitId);
+    }catch(e){ /* legado/sem token: mantém comportamento atual */ }
+  }
+  function renderUnitSel(org,units,unitId){
+    const el=document.getElementById('unitSel'); if(!el||!org) return;
+    const unit=units.find(u=>u.id===unitId)||units[0];
+    const multi=(units.length>1);
+    el.style.display='flex';
+    el.innerHTML=`<span style="font-weight:800">${org.name||''}</span>`+(unit?`<span style="color:var(--faint);margin:0 1px">▸</span><span style="color:var(--violet3);font-weight:800">${unit.name}${multi?' ▾':''}</span>`:'');
+    if(multi){ el.style.cursor='pointer'; el.title='Trocar de unidade'; el.onclick=()=>switchUnit(units); }
+    else { el.style.cursor='default'; el.onclick=null; }
+  }
+  function switchUnit(units){
+    const lista=units.map((u,i)=>`${i+1}) ${u.name}`).join('\n');
+    const pick=prompt('Escolha a unidade:\n'+lista); if(!pick) return;
+    const u=units[parseInt(pick,10)-1]; if(!u) return;
+    try{ sessionStorage.setItem('audens_unit',u.id); }catch(e){}
+    location.reload();
   }
 
   function setConn(state){ // 'live' | 'err' | ''
@@ -105,8 +140,39 @@
     el.textContent = state==='live'?'Conectado':(state==='err'?'Sem conexão':'Conectando…');
   }
 
+  // ---------- Firebase (para pegar o ID Token do usuário logado) ----------
+  // Best-effort: se o Firebase não estiver pronto ou ninguém estiver logado,
+  // as chamadas seguem SEM token (comportamento atual), sem quebrar nada.
+  let _fb=null, _fbTried=false;
+  async function fbAuth(){
+    if(_fb) return _fb; if(_fbTried) return null; _fbTried=true;
+    if(!(CFG.firebase && CFG.firebase.apiKey)) return null;
+    try{
+      const appMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const authMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      const fapp=(appMod.getApps&&appMod.getApps().length)?appMod.getApp():appMod.initializeApp(CFG.firebase);
+      _fb={auth:authMod.getAuth(fapp),mod:authMod};
+      return _fb;
+    }catch(e){ return null; }
+  }
+  async function idToken(){
+    const fb=await fbAuth(); if(!fb) return null;
+    try{
+      let u=fb.auth.currentUser;
+      if(!u){ u=await new Promise(res=>{ const un=fb.mod.onAuthStateChanged(fb.auth,x=>{un();res(x);}); setTimeout(()=>{try{un();}catch(e){} res(null);},2500); }); }
+      return u? await u.getIdToken() : null;
+    }catch(e){ return null; }
+  }
+
   // ---------- API (dados reais / webhooks) ----------
-  async function j(url,opts){ const r=await fetch(url,opts); if(!r.ok){let e={};try{e=await r.json()}catch(_){}throw new Error((e.error&&e.error.message)||('HTTP '+r.status));} return r.status===204?null:r.json(); }
+  async function j(url,opts){
+    opts=opts||{}; const headers={...(opts.headers||{})};
+    try{ const t=await idToken(); if(t) headers['Authorization']='Bearer '+t; }catch(e){}
+    try{ const uid=sessionStorage.getItem('audens_unit'); if(uid) headers['X-Unit-Id']=uid; }catch(e){}
+    const r=await fetch(url,{...opts,headers});
+    if(!r.ok){let e={};try{e=await r.json()}catch(_){}throw new Error((e.error&&e.error.message)||('HTTP '+r.status));}
+    return r.status===204?null:r.json();
+  }
   const api={
     hasBackend: !!API,
     orders:()=>j(API+'/api/orders'),
