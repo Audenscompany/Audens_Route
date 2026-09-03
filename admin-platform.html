@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0713" />
+<title>Audens Route — Central da Audens</title>
+<style>
+  :root{
+    --bg:#0a0713; --card:#140f26; --card2:#1a1330; --line:#2b2148; --line2:#3a2c5c;
+    --text:#f2eefb; --dim:#b6acd2; --faint:#8579a6;
+    --violet:#a855f7; --violet2:#7c3aed; --violet3:#c084fc; --green:#34d399; --amber:#f5b544; --red:#f2545b; --blue:#60a5fa;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1000px 600px at 85% -10%,#1a1030,transparent 60%),var(--bg);color:var(--text);min-height:100vh}
+  a{color:var(--violet3)}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 20px}
+  header{padding:26px 0 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#7c3aed,#a855f7);display:grid;place-items:center;font-weight:900;font-size:18px}
+  header h1{font-size:20px;margin:0;font-weight:850}
+  header .sub{font-size:12px;color:var(--faint)}
+  header .me{margin-left:auto;text-align:right;font-size:12px;color:var(--dim)}
+  header .me a{cursor:pointer;font-weight:700}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0 6px}
+  .btn{border:none;border-radius:11px;padding:10px 15px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+  .btn.primary{background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff}
+  .btn.ghost{background:var(--card);border:1px solid var(--line2);color:var(--text)}
+  .btn.sm{padding:7px 11px;font-size:12px;border-radius:9px}
+  .btn.danger{background:rgba(242,84,91,.14);border:1px solid rgba(242,84,91,.4);color:#ff8a8f}
+  .btn.ok{background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.4);color:#5ee3ac}
+  .muted{color:var(--faint);font-size:12.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:14px 0 30px}
+  .ocard{background:linear-gradient(180deg,var(--card),#100b20);border:1px solid var(--line);border-radius:16px;padding:18px;cursor:pointer;transition:border-color .15s,transform .05s}
+  .ocard:hover{border-color:var(--line2);transform:translateY(-1px)}
+  .ocard h3{margin:0 0 3px;font-size:16px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+  .badge{font-size:10.5px;font-weight:800;border-radius:7px;padding:3px 9px}
+  .b-active{background:rgba(52,211,153,.14);color:#5ee3ac}
+  .b-suspended{background:rgba(245,181,68,.16);color:#ffcf6e}
+  .b-canceled{background:rgba(242,84,91,.16);color:#ff8a8f}
+  .b-plan{background:rgba(168,85,247,.16);color:var(--violet3)}
+  .b-noplan{background:rgba(133,121,166,.16);color:var(--faint)}
+  .counts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .counts .c{text-align:center;background:#0c0a17;border:1px solid var(--line);border-radius:10px;padding:8px 4px}
+  .counts .c b{display:block;font-size:17px}
+  .counts .c span{font-size:10px;color:var(--faint)}
+  .empty{color:var(--faint);text-align:center;padding:40px;border:1px dashed var(--line2);border-radius:16px}
+  /* painel/modal */
+  .scrim{position:fixed;inset:0;background:rgba(6,4,14,.66);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;overflow:auto;z-index:20}
+  .scrim.on{display:flex}
+  .panel{width:100%;max-width:720px;background:linear-gradient(180deg,var(--card2),#120d22);border:1px solid var(--line2);border-radius:18px;padding:22px}
+  .panel h2{margin:0 0 2px;font-size:19px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .sec{margin-top:18px}
+  .sec h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--violet3);margin:0 0 8px}
+  .list{display:flex;flex-direction:column;gap:6px}
+  .li{display:flex;align-items:center;gap:10px;background:#0c0a17;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px}
+  .li .rl{margin-left:auto;font-size:11px;color:var(--faint)}
+  .meter{height:8px;border-radius:6px;background:#0c0a17;border:1px solid var(--line);overflow:hidden}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,#7c3aed,#a855f7)}
+  .meter i.warn{background:linear-gradient(90deg,#f5b544,#f2545b)}
+  .usegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ub{font-size:12px;color:var(--dim);margin-bottom:5px;display:flex;justify-content:space-between}
+  label{display:block;font-size:12px;font-weight:700;color:var(--dim);margin:10px 0 5px}
+  input,select{width:100%;background:#0c0a17;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;font-size:14px;font-family:inherit}
+  .field{flex:1;min-width:150px}
+  .x{margin-left:auto;background:none;border:none;color:var(--faint);font-size:20px;cursor:pointer}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1330;border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:12px;font-size:13px;opacity:0;transition:opacity .2s;z-index:50}
+  .toast.show{opacity:1}
+  .center{min-height:70vh;display:grid;place-items:center;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">A</div>
+    <div><h1>Central da Audens</h1><div class="sub">Administração da plataforma · clientes, planos e uso</div></div>
+    <div class="me" id="me"></div>
+  </header>
+  <div id="app"></div>
+</div>
+<div class="scrim" id="scrim"><div class="panel" id="panel"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="config.js" onerror="window.AUDENS_CONFIG=window.AUDENS_CONFIG||{}"></script>
+<script>
+const CFG = window.AUDENS_CONFIG || {};
+const API = CFG.apiUrl || '';
+const HAS_FB = !!(CFG.firebase && CFG.firebase.apiKey);
+let _fb=null;
+async function fbAuth(){
+  if(_fb) return _fb; if(!HAS_FB) return null;
+  const appMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+  const authMod=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+  const fapp=(appMod.getApps&&appMod.getApps().length)?appMod.getApp():appMod.initializeApp(CFG.firebase);
+  _fb={auth:authMod.getAuth(fapp),mod:authMod}; return _fb;
+}
+async function currentUser(){
+  const fb=await fbAuth(); if(!fb) return null;
+  return fb.auth.currentUser || await new Promise(res=>{ const un=fb.mod.onAuthStateChanged(fb.auth,u=>{un();res(u);}); setTimeout(()=>res(null),3000); });
+}
+async function idToken(){ try{ const u=await currentUser(); return u?await u.getIdToken():null; }catch(e){ return null; } }
+async function api(path, opts={}){
+  const t=await idToken();
+  const r=await fetch(API+path, {...opts, headers:{'Content-Type':'application/json', ...(opts.headers||{}), ...(t?{Authorization:'Bearer '+t}:{})}});
+  let j={}; try{ j=await r.json(); }catch(_){}
+  if(!r.ok) throw Object.assign(new Error((j.error&&j.error.message)||('HTTP '+r.status)), {status:r.status});
+  return j;
+}
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function closePanel(){ document.getElementById('scrim').classList.remove('on'); }
+document.getElementById('scrim').addEventListener('click',e=>{ if(e.target.id==='scrim') closePanel(); });
+
+let PLANS=[];
+async function boot(){
+  const app=document.getElementById('app');
+  if(!HAS_FB || !API){ app.innerHTML=`<div class="center"><div><h2>Configuração ausente</h2><p class="muted">Falta o config.js (Firebase/apiUrl).</p></div></div>`; return; }
+  const u=await currentUser();
+  if(!u){ app.innerHTML=`<div class="center"><div><h2>Faça login</h2><p class="muted">Entre com a sua conta da Audens para acessar o painel.</p><p><a href="index.html">Ir para o login →</a></p></div></div>`; return; }
+  document.getElementById('me').innerHTML = `${esc(u.email||'')}<br><a onclick="logout()">sair</a>`;
+  app.innerHTML=`<div class="muted" style="padding:30px 0">Carregando…</div>`;
+  try{
+    const data=await api('/api/platform/overview');
+    PLANS=data.plans||[];
+    render(data.organizations||[]);
+  }catch(e){
+    if(e.status===403){ app.innerHTML=`<div class="center"><div><h2>Acesso restrito 🔒</h2><p class="muted">Este painel é exclusivo da equipe Audens (superadmin).<br>Sua conta (${esc(u.email||'')}) não tem esse acesso.</p></div></div>`; }
+    else if(e.status===401){ app.innerHTML=`<div class="center"><div><h2>Sessão expirada</h2><p><a href="index.html">Entrar de novo →</a></p></div></div>`; }
+    else { app.innerHTML=`<div class="empty">Erro ao carregar: ${esc(e.message)}</div>`; }
+  }
+}
+function render(orgs){
+  const app=document.getElementById('app');
+  const cards = orgs.map(o=>{
+    const st=o.status||'active';
+    const stCls = st==='active'?'b-active':(st==='suspended'?'b-suspended':'b-canceled');
+    const stTxt = st==='active'?'Ativo':(st==='suspended'?'Suspenso':'Cancelado');
+    const planB = o.plan?`<span class="badge b-plan">${esc(o.plan.name)}</span>`:`<span class="badge b-noplan">sem plano</span>`;
+    return `<div class="ocard" onclick="openOrg('${o.id}')">
+      <h3>${esc(o.name)}</h3>
+      <div class="badges"><span class="badge ${stCls}">${stTxt}</span>${planB}</div>
+      <div class="counts">
+        <div class="c"><b>${o.units}</b><span>unidades</span></div>
+        <div class="c"><b>${o.stores}</b><span>lojas</span></div>
+        <div class="c"><b>${o.users}</b><span>usuários</span></div>
+        <div class="c"><b>${o.drivers}</b><span>motoboys</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  app.innerHTML=`
+    <div class="toolbar">
+      <button class="btn primary" onclick="openCreate()">+ Nova organização</button>
+      <button class="btn ghost" onclick="boot()">↻ Atualizar</button>
+      <button class="btn ghost" onclick="openPlans()">Planos</button>
+      <span class="muted" style="margin-left:auto">${orgs.length} organização(ões)</span>
+    </div>
+    ${orgs.length?`<div class="grid">${cards}</div>`:`<div class="empty">Nenhuma organização ainda. Crie a primeira com "Nova organização".</div>`}`;
+}
+function planOptions(sel){ return PLANS.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`).join(''); }
+function meter(used,max){ const pct=max>0?Math.min(100,Math.round(used/max*100)):0; const warn=pct>=90?'warn':''; return `<div class="ub"><span>${used}${max!=null?' de '+max:''}</span><span>${max!=null?pct+'%':''}</span></div><div class="meter"><i class="${warn}" style="width:${pct}%"></i></div>`; }
+async function openOrg(orgId){
+  const scrim=document.getElementById('scrim'), panel=document.getElementById('panel');
+  panel.innerHTML=`<div class="muted">Carregando…</div>`; scrim.classList.add('on');
+  try{
+    const d=await api('/api/platform/organizations/'+orgId);
+    const o=d.organization, lim=d.limits, us=d.usage;
+    const st=o.status||'active';
+    const usageHtml = lim ? `<div class="usegrid">
+        <div>${meter(us.units,lim.maxUnits)}<div class="muted">unidades</div></div>
+        <div>${meter(us.stores,lim.maxStores)}<div class="muted">lojas</div></div>
+        <div>${meter(us.users,lim.maxUsers)}<div class="muted">usuários</div></div>
+        <div>${meter(us.units,null)}<div class="muted">&nbsp;</div></div>
+      </div>` : `<p class="muted">Sem plano definido — atribua um plano para ver os limites.</p>`;
+    panel.innerHTML=`
+      <div class="row"><h2>${esc(o.name)}</h2><button class="x" onclick="closePanel()">✕</button></div>
+      <div class="badges"><span class="badge ${st==='active'?'b-active':(st==='suspended'?'b-suspended':'b-canceled')}">${st==='active'?'Ativo':(st==='suspended'?'Suspenso':'Cancelado')}</span>${d.plan?`<span class="badge b-plan">${esc(d.plan.name)}</span>`:''}</div>
+
+      <div class="sec"><h4>Plano & assinatura</h4>
+        <div class="row">
+          <div class="field"><label>Plano</label><select id="planSel">${planOptions(d.plan?d.plan.id:'')}</select></div>
+          <div class="field"><label>Status</label><select id="subStatus">
+            ${['trialing','active','past_due','suspended','canceled'].map(s=>`<option value="${s}" ${d.subscription&&d.subscription.status===s?'selected':''}>${s}</option>`).join('')}
+          </select></div>
+          <div style="align-self:flex-end"><button class="btn primary sm" onclick="saveSub('${o.id}')">Salvar plano</button></div>
+        </div>
+      </div>
+
+      <div class="sec"><h4>Uso × limites</h4>${usageHtml}</div>
+
+      <div class="sec"><h4>Unidades (${d.units.length})</h4><div class="list">${d.units.map(u=>`<div class="li">${esc(u.name)}<span class="rl">${esc(u.status||'')}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
+      <div class="sec"><h4>Lojas (${d.stores.length})</h4><div class="list">${d.stores.map(s=>`<div class="li">${esc(s.name)}<span class="rl">${s.active?'ativa':'inativa'}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
+      <div class="sec"><h4>Usuários (${d.users.length})</h4><div class="list">${d.users.map(u=>`<div class="li">${esc(u.name||u.email)}<span class="rl">${esc(u.role)}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
+
+      <div class="sec row" style="justify-content:flex-end;gap:8px">
+        ${st==='active'?`<button class="btn danger sm" onclick="setOrgStatus('${o.id}','suspended')">Suspender cliente</button>`
+                       :`<button class="btn ok sm" onclick="setOrgStatus('${o.id}','active')">Reativar cliente</button>`}
+      </div>`;
+  }catch(e){ panel.innerHTML=`<div class="row"><h2>Erro</h2><button class="x" onclick="closePanel()">✕</button></div><p class="muted">${esc(e.message)}</p>`; }
+}
+async function saveSub(orgId){
+  const planId=document.getElementById('planSel').value, status=document.getElementById('subStatus').value;
+  try{ await api('/api/platform/organizations/'+orgId+'/subscription',{method:'POST',body:JSON.stringify({planId,status})}); toast('Plano/assinatura salvos'); openOrg(orgId); boot(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+async function setOrgStatus(orgId,status){
+  if(status==='suspended' && !confirm('Suspender este cliente? Ele perde o acesso operacional até reativar.')) return;
+  try{ await api('/api/platform/organizations/'+orgId,{method:'PATCH',body:JSON.stringify({status})}); toast(status==='suspended'?'Cliente suspenso':'Cliente reativado'); openOrg(orgId); boot(); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+function openCreate(){
+  const scrim=document.getElementById('scrim'), panel=document.getElementById('panel');
+  panel.innerHTML=`
+    <div class="row"><h2>Nova organização</h2><button class="x" onclick="closePanel()">✕</button></div>
+    <p class="muted">Cria a empresa cliente + a primeira unidade + assinatura. O login do dono você cria depois na tela Usuários; se o e-mail dele já existir, ele é vinculado como dono automaticamente.</p>
+    <label>Nome da organização (cliente)</label><input id="cName" placeholder="Ex.: Hamburgueria do João" />
+    <div class="row">
+      <div class="field"><label>1ª unidade</label><input id="cUnit" placeholder="Ex.: Matriz" value="Matriz" /></div>
+      <div class="field"><label>Plano</label><select id="cPlan">${planOptions('plan_free')}</select></div>
+    </div>
+    <label>E-mail do dono (opcional)</label><input id="cOwner" type="email" placeholder="dono@exemplo.com" />
+    <div class="sec row" style="justify-content:flex-end"><button class="btn primary" onclick="doCreate()">Criar cliente</button></div>`;
+  scrim.classList.add('on');
+}
+async function doCreate(){
+  const name=document.getElementById('cName').value.trim();
+  const unitName=document.getElementById('cUnit').value.trim()||'Matriz';
+  const planId=document.getElementById('cPlan').value;
+  const ownerEmail=document.getElementById('cOwner').value.trim();
+  if(!name){ toast('Informe o nome da organização'); return; }
+  try{ const r=await api('/api/platform/organizations',{method:'POST',body:JSON.stringify({name,unitName,planId,ownerEmail})}); toast('Cliente criado!'); closePanel(); boot(); if(r.ownerPendente) toast('Dono '+r.ownerPendente+' ainda não tem login — crie na tela Usuários.'); }
+  catch(e){ toast('Erro: '+e.message); }
+}
+async function openPlans(){
+  const scrim=document.getElementById('scrim'), panel=document.getElementById('panel');
+  panel.innerHTML=`<div class="muted">Carregando…</div>`; scrim.classList.add('on');
+  try{
+    const d=await api('/api/platform/plans'); PLANS=d.plans||[];
+    panel.innerHTML=`<div class="row"><h2>Planos</h2><button class="x" onclick="closePanel()">✕</button></div>
+      <div class="list">${PLANS.map(p=>`<div class="li"><b>${esc(p.name)}</b> <span class="rl">${p.maxUnits} un · ${p.maxStores} lojas · ${p.maxUsers} usuários · R$ ${Number(p.price||0)}</span></div>`).join('')}</div>
+      <p class="muted" style="margin-top:12px">Edição detalhada de planos entra na próxima etapa. Por ora, os limites acima já valem para atribuição aos clientes.</p>`;
+  }catch(e){ panel.innerHTML=`<div class="row"><h2>Erro</h2><button class="x" onclick="closePanel()">✕</button></div><p class="muted">${esc(e.message)}</p>`; }
+}
+async function logout(){ try{ const fb=await fbAuth(); if(fb) await fb.mod.signOut(fb.auth);}catch(e){} location.href='index.html'; }
+window.openOrg=openOrg; window.openCreate=openCreate; window.openPlans=openPlans; window.doCreate=doCreate; window.saveSub=saveSub; window.setOrgStatus=setOrgStatus; window.closePanel=closePanel; window.logout=logout; window.boot=boot;
+boot();
+</script>
+</body>
+</html>

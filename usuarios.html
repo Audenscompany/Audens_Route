@@ -54,7 +54,7 @@ function render(){
     <div class="u-item">
       <div class="u-av">${(u.name||'?').trim().charAt(0).toUpperCase()}</div>
       <div><b>${u.name||''}</b><div class="em">${u.email||''}</div>
-        <div class="em" style="margin-top:2px">senha: ${u.currentPassword?`<span id="pw-${u.uid}" data-pw="${(u.currentPassword||'').replace(/"/g,'&quot;')}">••••••</span> <a onclick="revealPw('${u.uid}')" style="color:var(--violet3);cursor:pointer;font-weight:700">ver</a>`:'<span style="color:var(--faint)">definida antes deste recurso — use "redefinir senha"</span>'}</div>
+        <div class="em" style="margin-top:2px;color:var(--faint)">🔒 Senha protegida — use "redefinir senha" para trocar</div>
       </div>
       <div class="right">
         <span class="rolepill rp-${u.role}">${ROLE_LABEL[u.role]||u.role}</span>
@@ -82,7 +82,6 @@ async function addUser(){
 }
 async function changeRole(uid,role){ try{ await api.setUserRole(uid,role); toast('Acesso atualizado'); load(); }catch(e){ toast('Erro: '+e.message); } }
 async function removeUser(uid,name){ if(!confirm(`Remover o login de "${name}"?`))return; try{ await api.delUser(uid); toast('Removido'); load(); }catch(e){ toast('Erro: '+e.message); } }
-function revealPw(uid){ const el=document.getElementById('pw-'+uid); if(!el)return; const shown=el.textContent!=='••••••'; el.textContent=shown?'••••••':(el.getAttribute('data-pw')||''); }
 async function resetPass(uid,name){
   const p=prompt(`Nova senha para "${name}" (mínimo 6 caracteres).\nAnote e entregue essa senha para a pessoa:`);
   if(p===null)return;

@@ -25,6 +25,9 @@ const {api,setConn,toast}=AudensShell;
 const TABS=[['estoque-contagem.html','Contagem'],['estoque-atual.html','Estoque atual'],['estoque-lista.html','Lista de compras'],['estoque-produtos.html','Produtos'],['estoque-fornecedores.html','Fornecedores'],['estoque-historico.html','Histórico']];
 const ROLE=(()=>{try{return sessionStorage.getItem('audens_role')||'';}catch(e){return '';}})();
 let stores=[],store='',suppliers=[],list=null,saveT=null,showZero=false;
+const excluded=new Set();
+function itemKey(it){ return it.productId||('m:'+(it.name||'')); }
+function togglePrint(i,on){ const it=list.items[i]; if(!it)return; const k=itemKey(it); if(on)excluded.delete(k); else excluded.add(k); }
 const qp=new URLSearchParams(location.search); let listId=qp.get('id')||'';
 function num(v){ return v===''||v==null?0:(Math.round(Number(v)*100)/100); }
 function fmt(v){ const n=num(v); return (Number.isInteger(n)?n:n.toFixed(2).replace('.',',')); }
@@ -49,6 +52,7 @@ function renderHead(){
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
     <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);cursor:pointer"><input type="checkbox" ${showZero?'checked':''} onchange="toggleZero(this.checked)"> mostrar itens zerados</label>
+    <span style="font-size:11.5px;color:var(--faint)">desmarque um item (☐) para não incluí-lo na impressão</span>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       ${st!=='finalized'?`<button class="sbtn ghost" style="padding:9px 14px;font-size:12.5px" onclick="addItem()">+ Adicionar item</button>`:''}
       <button class="sbtn ghost" style="padding:9px 14px;font-size:12.5px" onclick="printList()">🖨 Imprimir / PDF</button>
@@ -70,7 +74,9 @@ function renderBody(){
     const g=groups[k]; const sup=k==='__none'?null:supObj(k);
     html+=`<div class="sgrp"><div class="gh"><span class="gn">${k==='__none'?'Sem fornecedor definido':supName(k)}</span><span class="gs">${g.length} item(ns)</span>${(sup&&(sup.whatsapp||sup.phone))?`<button class="sbtn g" style="padding:6px 11px;font-size:11px;margin-left:10px" onclick="waSup('${k}')">WhatsApp</button>`:`<button class="sbtn ghost" style="padding:6px 11px;font-size:11px;margin-left:10px" onclick="copySup('${k}')">Copiar</button>`}</div>`;
     for(const it of g){
-      html+=`<div class="litem ${it.manuallyEdited?'edited':''}">
+      const inc=!excluded.has(itemKey(it));
+      html+=`<div class="litem ${it.manuallyEdited?'edited':''}" style="${inc?'':'opacity:.5'}">
+        <label class="pchk" title="Incluir na lista impressa" style="display:flex;align-items:center;padding-right:2px;cursor:pointer"><input type="checkbox" ${inc?'checked':''} onchange="togglePrint(${it._i},this.checked);renderBody()"></label>
         <div><div class="nm">${it.name}${it.uncounted?' <span class="sbadge dr" style="font-size:9px">não contado</span>':''}</div><div class="mt">contado <b>${fmt(it.counted)}</b> · alvo <b>${fmt(it.target)}</b> · sugerido <b>${fmt(it.suggested)}</b> ${it.unit}</div></div>
         <div class="ed"><input inputmode="decimal" ${finalized?'disabled':''} value="${fmt(it.final)}" onchange="setFinal(${it._i},this.value)"><span style="font-size:12px;color:var(--dim);min-width:24px">${it.unit}</span>${finalized?'':`<button class="rm" title="Remover" onclick="rmItem(${it._i})">✕</button>`}</div>
       </div>`;
@@ -107,7 +113,8 @@ async function markExported(){ if(list&&list.status==='draft'){ try{ list=await 
 function printList(){
   if(!list)return;
   const store_=stores.find(s=>s.id===store);
-  const items=(list.items||[]).filter(i=>num(i.final)>0);
+  const items=(list.items||[]).filter(i=>num(i.final)>0 && !excluded.has(itemKey(i)));
+  if(!items.length){ toast('Nenhum item marcado para impressão'); return; }
   const groups={}; items.forEach(i=>{const k=i.supplierId||'__none';(groups[k]=groups[k]||[]).push(i);});
   let rows='';
   Object.keys(groups).sort((a,b)=>a==='__none'?1:supName(a).localeCompare(supName(b))).forEach(k=>{
