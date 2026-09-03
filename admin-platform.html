@@ -147,6 +147,7 @@ function render(orgs){
         <div class="c"><b>${o.users}</b><span>usuários</span></div>
         <div class="c"><b>${o.drivers}</b><span>motoboys</span></div>
       </div>
+      <div style="margin-top:12px"><button class="btn primary sm" style="width:100%" onclick="event.stopPropagation();accessOrg('${o.id}')">Acessar ↗</button></div>
     </div>`;
   }).join('');
   app.innerHTML=`
@@ -214,7 +215,8 @@ async function openOrg(orgId){
       </div>
       <div class="sec"><h4>Usuários (${d.users.length})</h4><div class="list">${d.users.map(u=>`<div class="li">${esc(u.name||u.email)}<span class="rl">${esc(u.role)}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
 
-      <div class="sec row" style="justify-content:flex-end;gap:8px">
+      <div class="sec row" style="justify-content:space-between;gap:8px">
+        <button class="btn primary sm" onclick="accessOrg('${o.id}')">Acessar loja ↗</button>
         ${st==='active'?`<button class="btn danger sm" onclick="setOrgStatus('${o.id}','suspended')">Suspender cliente</button>`
                        :`<button class="btn ok sm" onclick="setOrgStatus('${o.id}','active')">Reativar cliente</button>`}
       </div>`;
@@ -267,8 +269,9 @@ function toggleForm(id){ const el=document.getElementById(id); if(el) el.style.d
 async function createUnit(orgId){ const name=(document.getElementById('unitName').value||'').trim(); if(!name){ toast('Informe o nome da unidade'); return; } try{ await api('/api/platform/organizations/'+orgId+'/units',{method:'POST',body:JSON.stringify({name})}); toast('Unidade criada'); openOrg(orgId); boot(); }catch(e){ toast('Erro: '+e.message); } }
 async function createStore(orgId){ const name=(document.getElementById('storeName').value||'').trim(); const unitId=document.getElementById('storeUnit').value; const type=document.getElementById('storeType').value; if(!name){ toast('Informe o nome da loja'); return; } if(!unitId){ toast('Selecione a unidade'); return; } try{ await api('/api/platform/organizations/'+orgId+'/stores',{method:'POST',body:JSON.stringify({name,unitId,type})}); toast('Loja criada com webhook'); openOrg(orgId); boot(); }catch(e){ toast('Erro: '+e.message); } }
 async function copyWebhook(enc){ const url=decodeURIComponent(enc); try{ await navigator.clipboard.writeText(url); toast('URL do webhook copiada'); }catch(e){ prompt('Copie a URL do webhook:', url); } }
+function accessOrg(orgId){ try{ sessionStorage.setItem('audens_org', orgId); sessionStorage.removeItem('audens_unit'); }catch(e){} location.href='dashboard.html'; }
 async function logout(){ try{ const fb=await fbAuth(); if(fb) await fb.mod.signOut(fb.auth);}catch(e){} location.href='index.html'; }
-window.openOrg=openOrg; window.openCreate=openCreate; window.openPlans=openPlans; window.doCreate=doCreate; window.saveSub=saveSub; window.setOrgStatus=setOrgStatus; window.closePanel=closePanel; window.logout=logout; window.boot=boot; window.toggleForm=toggleForm; window.createUnit=createUnit; window.createStore=createStore; window.copyWebhook=copyWebhook;
+window.openOrg=openOrg; window.openCreate=openCreate; window.openPlans=openPlans; window.doCreate=doCreate; window.saveSub=saveSub; window.setOrgStatus=setOrgStatus; window.closePanel=closePanel; window.logout=logout; window.boot=boot; window.toggleForm=toggleForm; window.createUnit=createUnit; window.createStore=createStore; window.copyWebhook=copyWebhook; window.accessOrg=accessOrg;
 boot();
 </script>
 </body>

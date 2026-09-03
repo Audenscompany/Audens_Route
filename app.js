@@ -106,6 +106,24 @@
   // Puxa /api/me (com token). Se não houver token/membership ainda, silencia
   // e mantém 100% o comportamento atual.
   async function initTenantContext(){
+    let orgImp=''; try{ orgImp=sessionStorage.getItem('audens_org')||''; }catch(e){}
+    // Modo IMPERSONAÇÃO (veio da Central "Acessar"): escopo por cliente + faixa.
+    if(orgImp){
+      try{
+        const c=await j(API+'/api/context'); // usa o header X-Org-Id
+        if(c && c.impersonating && c.organization){
+          window.AudensContext={impersonating:true, organization:c.organization, units:c.units||[]};
+          const units=c.units||[];
+          let unitId=''; try{ unitId=sessionStorage.getItem('audens_unit')||''; }catch(e){}
+          if(!units.find(u=>u.id===unitId)) unitId=units[0]?units[0].id:'';
+          try{ if(unitId) sessionStorage.setItem('audens_unit',unitId); }catch(e){}
+          renderImpersonationBanner(c.organization);
+          renderUnitSel(c.organization, units, unitId);
+          return;
+        }
+      }catch(e){ /* segue pro fluxo normal */ }
+    }
+    // Fluxo normal (membro): /api/me
     try{
       const me=await j(API+'/api/me');
       if(!me) return;
@@ -117,6 +135,15 @@
       renderUnitSel(org,units,unitId);
     }catch(e){ /* legado/sem token: mantém comportamento atual */ }
   }
+  function renderImpersonationBanner(org){
+    if(document.getElementById('impBanner')) return;
+    const main=document.querySelector('.main'); if(!main||!org) return;
+    const b=document.createElement('div'); b.id='impBanner';
+    b.style.cssText='background:linear-gradient(90deg,#7c3aed,#a855f7);color:#fff;font-size:12.5px;font-weight:700;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap';
+    b.innerHTML='👁️ Você está acessando <b>'+(org.name||'')+'</b> (modo Audens) <a onclick="AudensShell.exitImpersonation(event)" style="color:#fff;text-decoration:underline;cursor:pointer;margin-left:6px">Voltar à Central</a>';
+    main.insertBefore(b, main.firstChild);
+  }
+  function exitImpersonation(e){ if(e&&e.preventDefault)e.preventDefault(); try{ sessionStorage.removeItem('audens_org'); sessionStorage.removeItem('audens_unit'); }catch(_){} location.href='admin-platform.html'; }
   function renderUnitSel(org,units,unitId){
     const el=document.getElementById('unitSel'); if(!el||!org) return;
     const unit=units.find(u=>u.id===unitId)||units[0];
@@ -168,6 +195,7 @@
   async function j(url,opts){
     opts=opts||{}; const headers={...(opts.headers||{})};
     try{ const t=await idToken(); if(t) headers['Authorization']='Bearer '+t; }catch(e){}
+    try{ const oid=sessionStorage.getItem('audens_org'); if(oid) headers['X-Org-Id']=oid; }catch(e){}
     try{ const uid=sessionStorage.getItem('audens_unit'); if(uid) headers['X-Unit-Id']=uid; }catch(e){}
     const r=await fetch(url,{...opts,headers});
     if(!r.ok){let e={};try{e=await r.json()}catch(_){}throw new Error((e.error&&e.error.message)||('HTTP '+r.status));}
@@ -280,6 +308,6 @@
   function closeMenu(){ const a=document.querySelector('.app'); if(a)a.classList.remove('nav-open'); }
   // atalho ⌘K / Ctrl+K foca a busca
   document.addEventListener('keydown',(e)=>{ if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); const i=document.getElementById('globalSearch'); if(i)i.focus(); } });
-  window.AudensShell={ IC, LOGO, NAV, api, H, COLS, NEXT, setConn, toast, logout, API, _search, _clearSearch, searchTerm, toggleMenu, closeMenu };
+  window.AudensShell={ IC, LOGO, NAV, api, H, COLS, NEXT, setConn, toast, logout, API, _search, _clearSearch, searchTerm, toggleMenu, closeMenu, exitImpersonation };
   build();
 })();
