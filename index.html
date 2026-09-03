@@ -149,12 +149,23 @@
       const app = appMod.initializeApp(CFG.firebase);
       const auth = authMod.getAuth(app);
       const cred = await authMod.signInWithEmailAndPassword(auth, email, password);
-      const token = await cred.user.getIdTokenResult();
-      let role = (token.claims && token.claims.role) || '';
-      if (!role && CFG.apiUrl){ try{ const w = await (await fetch(CFG.apiUrl+'/api/whoami?email='+encodeURIComponent(email))).json(); role = (w && w.role) || 'operator'; }catch(_){ role='operator'; } }
+      const idt = await cred.user.getIdToken();
+      // login novo não carrega escopo antigo (impersonação) pra dentro
+      try{ sessionStorage.removeItem('audens_org'); sessionStorage.removeItem('audens_unit'); }catch(_){}
+      let role='', platformRole=null;
+      // /api/me decide o destino: SUPERADMIN vai pra Central; os demais pro app.
+      if (CFG.apiUrl){
+        try{
+          const me = await (await fetch(CFG.apiUrl+'/api/me',{headers:{Authorization:'Bearer '+idt}})).json();
+          if (me){ platformRole = me.platformRole||null; role = me.role||role; }
+        }catch(_){}
+      }
+      // fallback legado por e-mail (caso /api/me não traga papel)
+      if (!role && CFG.apiUrl){ try{ const w = await (await fetch(CFG.apiUrl+'/api/whoami?email='+encodeURIComponent(email))).json(); role = (w && w.role) || ''; }catch(_){} }
       if (!role) role='operator';
       sessionStorageSafe('audens_role', role);
       sessionStorageSafe('audens_email', email);
+      if (platformRole==='superadmin'){ location.href='admin-platform.html'; return; }
       location.href = pageForRole(role);
     }catch(ex){
       err.textContent = 'Não foi possível entrar. Verifique e-mail e senha.';

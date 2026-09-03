@@ -115,6 +115,7 @@ document.getElementById('scrim').addEventListener('click',e=>{ if(e.target.id===
 
 let PLANS=[];
 async function boot(){
+  try{ sessionStorage.removeItem('audens_org'); sessionStorage.removeItem('audens_unit'); }catch(e){}
   const app=document.getElementById('app');
   if(!HAS_FB || !API){ app.innerHTML=`<div class="center"><div><h2>Configuração ausente</h2><p class="muted">Falta o config.js (Firebase/apiUrl).</p></div></div>`; return; }
   const u=await currentUser();
