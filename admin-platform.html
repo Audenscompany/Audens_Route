@@ -189,8 +189,29 @@ async function openOrg(orgId){
 
       <div class="sec"><h4>Uso × limites</h4>${usageHtml}</div>
 
-      <div class="sec"><h4>Unidades (${d.units.length})</h4><div class="list">${d.units.map(u=>`<div class="li">${esc(u.name)}<span class="rl">${esc(u.status||'')}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
-      <div class="sec"><h4>Lojas (${d.stores.length})</h4><div class="list">${d.stores.map(s=>`<div class="li">${esc(s.name)}<span class="rl">${s.active?'ativa':'inativa'}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
+      <div class="sec"><h4>Unidades (${d.units.length}) <button class="btn ghost sm" style="margin-left:8px" onclick="toggleForm('formUnit')">+ Nova unidade</button></h4>
+        <div id="formUnit" style="display:none;margin-bottom:10px"><div class="row">
+          <div class="field"><input id="unitName" placeholder="Nome da unidade (ex.: São Benedito)"></div>
+          <div style="align-self:center"><button class="btn primary sm" onclick="createUnit('${o.id}')">Criar unidade</button></div>
+        </div></div>
+        <div class="list">${d.units.map(u=>`<div class="li">${esc(u.name)}<span class="rl">${esc(u.status||'')}</span></div>`).join('')||'<div class="muted">—</div>'}</div>
+      </div>
+      <div class="sec"><h4>Lojas (${d.stores.length}) <button class="btn ghost sm" style="margin-left:8px" onclick="toggleForm('formStore')" ${d.units.length?'':'disabled'}>+ Nova loja</button></h4>
+        <div id="formStore" style="display:none;margin-bottom:10px">
+          <div class="row">
+            <div class="field"><input id="storeName" placeholder="Nome (ex.: Burger FC São Benedito)"></div>
+            <div class="field"><select id="storeUnit">${d.units.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></div>
+            <div class="field"><select id="storeType"><option value="hamburgueria">Hambúrguer</option><option value="pizzaria">Pizza</option><option value="">Outro</option></select></div>
+            <div style="align-self:center"><button class="btn primary sm" onclick="createStore('${o.id}')">Criar loja</button></div>
+          </div>
+          <div class="muted" style="margin-top:4px">A loja nasce com webhook próprio; você conecta no Cardápio Web depois (botão "webhook" na lista).</div>
+        </div>
+        <div class="list">${d.stores.map(s=>{
+          const wh = s.webhookSecret ? (API+'/api/webhooks/orders/'+s.id+'?key='+s.webhookSecret) : '';
+          const unitName = (d.units.find(u=>u.id===s.unitId)||{}).name || '—';
+          return `<div class="li"><div><b>${esc(s.name)}</b><div class="muted" style="font-size:11px">unidade: ${esc(unitName)}</div></div><span class="rl">${s.active?'ativa':'inativa'}</span>${wh?`<button class="btn ghost sm" onclick="copyWebhook('${encodeURIComponent(wh)}')">webhook</button>`:''}</div>`;
+        }).join('')||'<div class="muted">—</div>'}</div>
+      </div>
       <div class="sec"><h4>Usuários (${d.users.length})</h4><div class="list">${d.users.map(u=>`<div class="li">${esc(u.name||u.email)}<span class="rl">${esc(u.role)}</span></div>`).join('')||'<div class="muted">—</div>'}</div></div>
 
       <div class="sec row" style="justify-content:flex-end;gap:8px">
@@ -242,8 +263,12 @@ async function openPlans(){
       <p class="muted" style="margin-top:12px">Edição detalhada de planos entra na próxima etapa. Por ora, os limites acima já valem para atribuição aos clientes.</p>`;
   }catch(e){ panel.innerHTML=`<div class="row"><h2>Erro</h2><button class="x" onclick="closePanel()">✕</button></div><p class="muted">${esc(e.message)}</p>`; }
 }
+function toggleForm(id){ const el=document.getElementById(id); if(el) el.style.display = el.style.display==='none'?'block':'none'; }
+async function createUnit(orgId){ const name=(document.getElementById('unitName').value||'').trim(); if(!name){ toast('Informe o nome da unidade'); return; } try{ await api('/api/platform/organizations/'+orgId+'/units',{method:'POST',body:JSON.stringify({name})}); toast('Unidade criada'); openOrg(orgId); boot(); }catch(e){ toast('Erro: '+e.message); } }
+async function createStore(orgId){ const name=(document.getElementById('storeName').value||'').trim(); const unitId=document.getElementById('storeUnit').value; const type=document.getElementById('storeType').value; if(!name){ toast('Informe o nome da loja'); return; } if(!unitId){ toast('Selecione a unidade'); return; } try{ await api('/api/platform/organizations/'+orgId+'/stores',{method:'POST',body:JSON.stringify({name,unitId,type})}); toast('Loja criada com webhook'); openOrg(orgId); boot(); }catch(e){ toast('Erro: '+e.message); } }
+async function copyWebhook(enc){ const url=decodeURIComponent(enc); try{ await navigator.clipboard.writeText(url); toast('URL do webhook copiada'); }catch(e){ prompt('Copie a URL do webhook:', url); } }
 async function logout(){ try{ const fb=await fbAuth(); if(fb) await fb.mod.signOut(fb.auth);}catch(e){} location.href='index.html'; }
-window.openOrg=openOrg; window.openCreate=openCreate; window.openPlans=openPlans; window.doCreate=doCreate; window.saveSub=saveSub; window.setOrgStatus=setOrgStatus; window.closePanel=closePanel; window.logout=logout; window.boot=boot;
+window.openOrg=openOrg; window.openCreate=openCreate; window.openPlans=openPlans; window.doCreate=doCreate; window.saveSub=saveSub; window.setOrgStatus=setOrgStatus; window.closePanel=closePanel; window.logout=logout; window.boot=boot; window.toggleForm=toggleForm; window.createUnit=createUnit; window.createStore=createStore; window.copyWebhook=copyWebhook;
 boot();
 </script>
 </body>
